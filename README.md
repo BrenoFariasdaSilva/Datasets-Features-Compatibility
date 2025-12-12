@@ -8,8 +8,10 @@
   
 ---
 
-Project-Description.
-  
+Welcome to the [Datasets-Features-Compatibility](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility) repository — a toolkit designed to inspect and describe tabular datasets (CSV) at scale, with a focus on feature compatibility both within and across datasets.  
+
+This tool is ideal for data scientists and machine learning practitioners who need to quickly assess dataset structure and compatibility, enabling efficient analysis and research across multiple datasets with shared or overlapping features.  
+
 ---
 
 </div>
