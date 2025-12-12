@@ -47,6 +47,10 @@ Project-Description.
       - [Linux](#linux-1)
       - [macOS](#macos-1)
       - [Windows](#windows-1)
+    - [Make](#make)
+      - [Linux](#linux-2)
+      - [macOS](#macos-2)
+      - [Windows](#windows-2)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -139,6 +143,25 @@ choco install python3
 
 Or download the installer from the official Python website.
 
+### Make 
+
+`Make` is used to run automated tasks defined in the project's Makefile, such as setting up environments, executing scripts, and managing Python dependencies.
+
+#### Linux
+
+``` bash
+sudo apt install make -y
+```
+
+#### macOS
+
+``` bash
+brew install make
+```
+
+#### Windows
+
+Available via Cygwin, MSYS2, or WSL.
 
 ## Results
 
