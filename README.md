@@ -256,7 +256,26 @@ python main.py
 
 ## Results
 
-Discuss the results obtained in the project.
+After running the script with the following configuration in `main.py`:
+
+```python
+DATASETS = { # Dictionary containing dataset paths and feature files
+	"CICDDoS2019-Dataset": [ # List of paths to the CICDDoS2019 dataset
+		"./Datasets/CICDDoS2019/01-12/",
+   ],
+   "CICDDoS2017-Dataset": [ # List of paths to the CICDDoS2017 dataset
+      "./Datasets/CIC-IDS2017/Converted/",
+   ],
+}
+
+CROSS_DATASET_VALIDATE = True # Set to True to perform cross-dataset validation between the datasets defined in DATASETS
+
+RESULTS_DIR = "./Dataset_Description/" # Directory to save the results
+RESULTS_FILENAME = "Dataset_Descriptor.csv" # Filename for the results CSV
+
+IGNORE_FILES = [RESULTS_FILENAME] # List of filenames to ignore when searching for datasets
+IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"] # List of directory names to ignore when searching for datasets
+```
 
 ## How to Cite?
 
