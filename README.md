@@ -38,8 +38,6 @@ Project-Description.
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Requirements](#requirements)
-  - [Setup](#setup)
-    - [Clone the repository](#clone-the-repository)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -54,17 +52,6 @@ Detailed project description.
 ## Requirements
 
 Bullet points of the requirements.
-
-## Setup
-
-### Clone the repository
-
-1. Clone the repository with the following command:
-
-   ```bash
-   git clone https://github.com/BrenoFariasDaSilva/DDoS-Detector.git
-   cd DDoS-Detector
-   ```
 
 ## Results
 
