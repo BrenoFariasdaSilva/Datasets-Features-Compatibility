@@ -225,6 +225,21 @@ DATASETS = {
 5. The consolidated results are written to `RESULTS_DIR/RESULTS_FILENAME` (by default `./Dataset_Description/Dataset_Descriptor.csv` in the dir of the current dataset processed).
 6. Files and directories matching `IGNORE_FILES` and `IGNORE_DIRS` are skipped during scanning.
 
+Configurable constants you may want to edit in `main.py`:
+
+```python
+# Execution Constants (examples):
+VERBOSE = False # Set to True to output verbose messages
+DATASETS = { ... } # Dataset mapping shown above
+CROSS_DATASET_VALIDATE = True # Set to True to perform cross-dataset validation between the datasets defined in DATASETS
+
+RESULTS_DIR = "./Dataset_Description/" # Directory to save the results
+RESULTS_FILENAME = "Dataset_Descriptor.csv" # Filename for the results CSV
+
+IGNORE_FILES = [RESULTS_FILENAME] # List of filenames to ignore when searching for datasets
+IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"] # List of directory names to ignore when searching for datasets
+```
+
 ## Results
 
 Discuss the results obtained in the project.
