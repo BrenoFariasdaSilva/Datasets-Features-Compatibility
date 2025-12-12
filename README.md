@@ -37,7 +37,6 @@ Project-Description.
 - [Template-Project. ](#template-project-)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
-  - [Requirements](#requirements)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -48,10 +47,6 @@ Project-Description.
 ## Introduction
 
 Detailed project description.
-
-## Requirements
-
-Bullet points of the requirements.
 
 ## Results
 
