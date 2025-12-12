@@ -62,7 +62,20 @@ Project-Description.
 
 ## Introduction
 
-Detailed project description.
+This repository provides a toolkit to inspect and describe tabular datasets (CSV) at scale, with a focus on feature compatibility and dataset comparability. The main goals are:
+
+- Recursively discover dataset files and build per-file metadata (sample and feature counts, data types, missing-value summaries, and detected label columns).
+- Produce per-dataset descriptor CSVs that list common and extra features, class distributions, and basic dataset statistics.
+- Perform pairwise cross-dataset comparisons to identify shared and non-shared features across dataset collections.
+- Optionally produce t-SNE visualizations of numeric feature spaces for quick separability checks.
+
+Typical uses:
+
+- Data curation and quality checks before model training.
+- Dataset compatibility analysis when combining multiple sources or performing transfer learning experiments.
+- Quick exploratory summaries for large datasets where full analysis would be costly.
+
+Outputs are written into a `Dataset_Description` folder inside each dataset path and include `Dataset_Descriptor.csv` (per-dataset) and `Cross_Dataset_Descriptor.csv` for pairwise comparisons.
 
 ## Setup
 
