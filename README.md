@@ -51,6 +51,7 @@ Project-Description.
       - [Linux](#linux-2)
       - [macOS](#macos-2)
       - [Windows](#windows-2)
+    - [Dependencies](#dependencies)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -162,6 +163,14 @@ brew install make
 #### Windows
 
 Available via Cygwin, MSYS2, or WSL.
+
+### Dependencies
+
+1. Install the project dependencies with the following command:
+
+   ```bash
+   make dependencies
+   ```
 
 ## Results
 
