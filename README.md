@@ -43,7 +43,6 @@ Project-Description.
   - [Installation:](#installation)
   - [Run Programing Language Code:](#run-programing-language-code)
     - [Dependencies](#dependencies)
-  - [Usage](#usage)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -105,13 +104,6 @@ Bullet points of the requirements.
    make dependencies
    ```
 
-## Usage
-
-In order to run the project, run the following command:
-
-```bash
-make run
-```
 
 ## Results
 
