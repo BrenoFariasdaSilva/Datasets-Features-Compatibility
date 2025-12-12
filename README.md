@@ -52,6 +52,7 @@ Project-Description.
       - [macOS](#macos-2)
       - [Windows](#windows-2)
     - [Dependencies](#dependencies)
+  - [Usage/Run](#usagerun)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -173,6 +174,15 @@ Available via Cygwin, MSYS2, or WSL.
    cd Datasets-Features-Compatibility # Only if not in the repository root directory yet
    make dependencies
    ```
+
+## Usage/Run
+
+Before running the project, change to the repository root directory:
+
+```bash
+cd Datasets-Features-Compatibility
+```
+
 
 ## Results
 
