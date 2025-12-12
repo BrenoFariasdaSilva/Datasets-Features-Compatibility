@@ -38,6 +38,10 @@ Project-Description.
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Setup](#setup)
+    - [Git](#git)
+        - [Linux](#linux)
+        - [macOS](#macos)
+        - [Windows](#windows)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -53,6 +57,29 @@ Detailed project description.
 
 This section provides instructions for installing Git, Python, Pip, Make, then to clone the repository (if not done yet) and all required project dependencies. 
 
+### Git
+
+`git` is a distributed version control system that is widely used for tracking changes in source code during software development. In this project, `git` is used to download and manage the analyzed repositories, as well as to clone the project and its submodules. To install `git`, follow the instructions below based on your operating system:
+
+##### Linux
+
+To install `git` on Linux, run:
+
+```bash
+sudo apt install git -y
+```
+
+##### macOS
+
+To install `git` on MacOS, you can use Homebrew:
+
+```bash
+brew install git
+```
+
+##### Windows
+
+On Windows, you can download `git` from the official website [here](https://git-scm.com/downloads) and follow the installation instructions provided there.
 
 ## Results
 
