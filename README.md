@@ -37,6 +37,7 @@ Project-Description.
 - [Template-Project. ](#template-project-)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
+  - [Setup](#setup)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -47,6 +48,11 @@ Project-Description.
 ## Introduction
 
 Detailed project description.
+
+## Setup
+
+This section provides instructions for installing Git, Python, Pip, Make, then to clone the repository (if not done yet) and all required project dependencies. 
+
 
 ## Results
 
