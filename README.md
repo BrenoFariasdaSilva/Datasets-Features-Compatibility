@@ -246,14 +246,6 @@ Run the project (the repository Makefile prepares the environment and runs `main
 make
 ```
 
-Or run `main.py` directly with the active Python environment:
-
-```bash
-source ./venv/bin/activate # On Linux/macOS
-.\venv\Scripts\activate # On Windows
-python main.py
-```
-
 ## Results
 
 After running the script with the following configuration in `main.py`:
