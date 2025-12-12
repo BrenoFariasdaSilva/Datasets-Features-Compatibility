@@ -277,6 +277,29 @@ IGNORE_FILES = [RESULTS_FILENAME] # List of filenames to ignore when searching f
 IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"] # List of directory names to ignore when searching for datasets
 ```
 
+The run produced per-dataset descriptor reports and cross-dataset comparison reports. Key generated outputs (examples):
+
+- Per-dataset descriptors:
+  - `Datasets/CICDDoS2019/01-12/Dataset_Description/Dataset_descriptor.csv` — a row per discovered file containing: dataset name, size, sample & feature counts, feature types, categorical columns, missing values summary, classes and class distributions, whether headers match across files, common/extra features, and t-SNE plot path.
+  - `Datasets/CIC-IDS2017/Converted/Dataset_Description/Dataset_Descriptor.csv` — same format for the CIC-IDS2017 files.
+
+- Cross-dataset descriptors (pairwise comparisons):
+  - `Datasets/CICDDoS2019/01-12/Dataset_Description/Cross_Dataset_Descriptor.csv` — shows comparison between `CICDDoS2019-Dataset` and `CICDDoS2017-Dataset` (example: `Files in A = 18`, `Files in B = 8`, lists of common and extra features).
+  - `Datasets/CIC-IDS2017/Converted/Dataset_Description/Cross_Dataset_Descriptor.csv` — the reciprocal comparison (same content from the other dataset folder view).
+
+Example details observed in this run:
+
+- The CICDDoS2019 per-dataset descriptor reported multiple large CSVs (TFTP: ~19.5M rows, various DrDoS_* files with millions of rows). Many files had 76 features with numeric and integer types and an identified `label` column; headers were reported as matching across files where applicable.
+- The CIC-IDS2017 per-dataset descriptor reported several files (~68–70 features) with class distributions (e.g., `Benign`, `Bot`, `DDoS`, etc.).
+
+Notes and where to look:
+
+- Results are written per dataset into a `Dataset_Description` folder inside each dataset path (e.g. `Datasets/<dataset_path>/Dataset_Description/`).
+- The main consolidated filenames are `Dataset_Descriptor.csv` (per-dataset) and `Cross_Dataset_Descriptor.csv` (pairwise comparisons).
+- Open the generated CSVs with a spreadsheet viewer or `pandas` to inspect feature lists and distributions; t-SNE plots (if generated) are saved alongside the descriptors.
+
+If you want, I can add a short script or Make target to collect all per-dataset `Dataset_Descriptor.csv` files into a single top-level summary file.
+
 ## How to Cite?
 
 If you use the Datasets-Features-Compatibility in your research, please cite it using the following BibTeX entry:
