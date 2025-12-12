@@ -183,6 +183,26 @@ Before running the project, change to the repository root directory:
 cd Datasets-Features-Compatibility
 ```
 
+Create the datasets directory (if you don't already have one):
+
+```bash
+mkdir ./Datasets
+```
+
+This project expects you to organize datasets according to the `DATASETS` mapping defined in `main.py`. Example (excerpt from `main.py`):
+
+```python
+DATASETS = { # Dictionary containing dataset paths and feature files
+	"CICDDoS2019-Dataset": [ # List of paths to the CICDDoS2019 dataset
+		"./Datasets/CICDDoS2019/01-12/",
+   ],
+   "CICDDoS2017-Dataset": [ # List of paths to the CICDDoS2017 dataset
+      "./Datasets/CIC-IDS2017/Converted/",
+   ],
+}
+
+```
+
 
 ## Results
 
