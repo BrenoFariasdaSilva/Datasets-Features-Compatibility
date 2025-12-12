@@ -40,7 +40,6 @@ Project-Description.
   - [Requirements](#requirements)
   - [Setup](#setup)
     - [Clone the repository](#clone-the-repository)
-  - [Installation:](#installation)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -66,27 +65,6 @@ Bullet points of the requirements.
    git clone https://github.com/BrenoFariasDaSilva/DDoS-Detector.git
    cd DDoS-Detector
    ```
-
-## Installation:
-
-* Programing Language:
-
-  * Manually:
-      ```bash
-      # Programing Language:
-      sudo apt install program-language -y
-      ```
-
-  * Using Makefile:
-      ```bash
-      make install
-      ```
-
-  * Using ShellScript:
-      ```bash
-      chmod +x install.sh
-      sudo ./install.sh
-      ```  
 
 ## Results
 
