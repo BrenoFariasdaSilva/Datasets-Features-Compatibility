@@ -240,6 +240,20 @@ IGNORE_FILES = [RESULTS_FILENAME] # List of filenames to ignore when searching f
 IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"] # List of directory names to ignore when searching for datasets
 ```
 
+Run the project (the repository Makefile prepares the environment and runs `main.py`):
+
+```bash
+make
+```
+
+Or run `main.py` directly with the active Python environment:
+
+```bash
+source ./venv/bin/activate # On Linux/macOS
+.\venv\Scripts\activate # On Windows
+python main.py
+```
+
 ## Results
 
 Discuss the results obtained in the project.
