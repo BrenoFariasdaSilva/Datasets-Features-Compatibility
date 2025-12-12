@@ -203,6 +203,27 @@ DATASETS = { # Dictionary containing dataset paths and feature files
 
 ```
 
+How `main.py` behaves:
+
+1. It uses the `DATASETS` mapping to find dataset folders and files to analyze.
+2. It recursively scans the provided dataset paths for supported file format: `.csv`. In case your datasets are in other formats, i'm happy to say there i've created a repository that reads any `.arff`, `.csv`, `.parquet`, and `.txt` and converts them to all those formats as well. You can find this repo in [Multi-Format-Dataset-Converter](Multi-Format-Dataset-Converter).
+ 
+Note about paths and file types:
+
+- The values in the `DATASETS` mapping may be either directory paths (the script will scan them recursively) or direct file paths to individual CSV files. Example:
+
+```python
+DATASETS = {
+   "CICDDoS2019-Dataset": ["./Datasets/CICDDoS2019/01-12/test.csv"],
+   "CICDDoS2017-Dataset": ["./Datasets/CIC-IDS2017/Converted/example.csv"],
+}
+```
+
+- All provided files must be CSV files (the script's current loader expects CSV input). If you need other formats, consider converting them to CSV before analysis or use the external converter linked above.
+3. It performs dataset inspection and feature analysis (header detection, feature types, missing values, class distributions, etc.).
+4. If `CROSS_DATASET_VALIDATE` is `True`, it performs cross-dataset header/feature comparisons across the defined datasets, otherwise only for the files in the same dataset.
+5. The consolidated results are written to `RESULTS_DIR/RESULTS_FILENAME` (by default `./Dataset_Description/Dataset_Descriptor.csv` in the dir of the current dataset processed).
+6. Files and directories matching `IGNORE_FILES` and `IGNORE_DIRS` are skipped during scanning.
 
 ## Results
 
