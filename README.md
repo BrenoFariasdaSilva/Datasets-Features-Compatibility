@@ -108,6 +108,7 @@ git clone https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility
 To initialize submodules manually:
 
 ``` bash
+cd Datasets-Features-Compatibility # Only if not in the repository root directory yet
 git submodule init
 git submodule update
 ```
@@ -169,6 +170,7 @@ Available via Cygwin, MSYS2, or WSL.
 1. Install the project dependencies with the following command:
 
    ```bash
+   cd Datasets-Features-Compatibility # Only if not in the repository root directory yet
    make dependencies
    ```
 
