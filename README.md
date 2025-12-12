@@ -42,7 +42,6 @@ Project-Description.
     - [Clone the repository](#clone-the-repository)
   - [Installation:](#installation)
   - [Run Programing Language Code:](#run-programing-language-code)
-    - [Dependencies](#dependencies)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -95,14 +94,6 @@ Bullet points of the requirements.
 ```bash
 # Command here 
 ```
-
-### Dependencies
-
-1. Install the project dependencies with the following command:
-
-   ```bash
-   make dependencies
-   ```
 
 
 ## Results
