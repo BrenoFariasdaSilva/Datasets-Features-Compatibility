@@ -42,6 +42,7 @@ Project-Description.
         - [Linux](#linux)
         - [macOS](#macos)
         - [Windows](#windows)
+    - [Clone the Repository](#clone-the-repository)
   - [Results](#results)
   - [How to Cite?](#how-to-cite)
   - [Contributing](#contributing)
@@ -80,6 +81,27 @@ brew install git
 ##### Windows
 
 On Windows, you can download `git` from the official website [here](https://git-scm.com/downloads) and follow the installation instructions provided there.
+
+### Clone the Repository
+
+Now that git is installed, it's time to clone this repository with all required submodules, use:
+
+``` bash
+git clone --recurse-submodules https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility.git
+```
+
+If you clone without submodules (not recommended):
+
+``` bash
+git clone https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility
+```
+
+To initialize submodules manually:
+
+``` bash
+git submodule init
+git submodule update
+```
 
 ## Results
 
