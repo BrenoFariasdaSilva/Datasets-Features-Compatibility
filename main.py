@@ -88,10 +88,10 @@ RUN_FUNCTIONS = {
 
 DATASETS = { # Dictionary containing dataset paths and feature files
 	"CICDDoS2019-Dataset": [ # List of paths to the CICDDoS2019 dataset
-		"./Datasets/CICDDoS2019/01-12/test.csv",
+		"./Datasets/CICDDoS2019/01-12/",
    ],
    "CICDDoS2017-Dataset": [ # List of paths to the CICDDoS2017 dataset
-      "./Datasets/CIC-IDS2017/Converted/example.csv",
+      "./Datasets/CIC-IDS2017/Converted/",
    ],
 }
 
