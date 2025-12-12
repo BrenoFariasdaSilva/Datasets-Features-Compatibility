@@ -841,26 +841,17 @@ def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=3
    verbose_output(f"{BackgroundColors.GREEN}Generating t-SNE plot for: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}") # Output start message for t-SNE generation
 
    try: # Main try-catch block for overall failure handling
-      df = load_dataset(filepath, low_memory=low_memory) # Load CSV into DataFrame
-      if df is None: # If loading failed
-         return None # Abort
-
-      cleaned = preprocess_dataframe(df, remove_zero_variance=False) # Basic cleaning
-      numeric_df = coerce_numeric_columns(cleaned) # Extract numeric features
-      numeric_df = fill_replace_and_drop(numeric_df) # Clean numeric frame
-
-      if numeric_df is None or numeric_df.shape[0] == 0 or numeric_df.shape[1] == 0: # No numeric data
-         return None # Abort
-
-      label_col = detect_label_column(cleaned.columns) # Detect label column
-      labels = cleaned[label_col] if label_col in cleaned.columns else None # Extract labels if present
-
-      if numeric_df.shape[0] > sample_size: # Downsample if too many rows
-         numeric_df, labels = downsample_with_class_awareness(numeric_df, labels, sample_size, random_state) # Class-aware downsampling
+      numeric_df, labels = prepare_numeric_dataset(filepath, low_memory, sample_size, random_state) # Prepare numeric dataset
+      if numeric_df is None: # Abort if preparation failed
+         return None # Indicate failure
 
       X = scale_features(numeric_df) # Scale features for t-SNE
-      tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter, random_state=random_state, init="pca") # Initialize t-SNE
-      X_emb = tsne.fit_transform(X) # Compute embedding
+
+      n_rows = X.shape[0] # Number of rows after downsampling
+      if n_rows <= max(3, int(perplexity) + 1): # Check t-SNE feasibility
+         return None # Abort if too few samples for t-SNE
+
+      X_emb = initialize_and_fit_tsne(X, perplexity, n_iter, random_state) # Compute t-SNE embedding
 
       if output_dir is None: # Determine output directory
          output_dir = os.path.join(os.path.dirname(os.path.abspath(filepath)), "Data_Separability") # Default RESULTS_DIR under file folder
@@ -873,14 +864,14 @@ def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=3
       save_tsne_plot(X_emb, labels, out_path, f"t-SNE: {base}") # Create and save plot
 
       try: # Try to delete DataFrame to free memory
-         del df # Free raw DataFrame
+         del numeric_df # Free numeric DataFrame
       except Exception: # Ignore any exceptions during deletion
          pass # Do nothing
       gc.collect() # Force garbage collection
 
       return out_name # Return saved filename
    except Exception as e: # Catch-all failure
-      verbose_output(f"{BackgroundColors.RED}t-SNE generation failed for {filepath}: {e}{Style.RESET_ALL}") # Verbose error
+      print(f"{BackgroundColors.RED}t-SNE generation failed for {filepath}: {e}{Style.RESET_ALL}") # Verbose error
       return None # Indicate failure
 
 def get_dataset_file_info(filepath, low_memory=True):
