@@ -28,20 +28,13 @@ ENSURE_LOG_DIR := @mkdir -p $(LOG_DIR) 2>/dev/null || $(PYTHON_CMD) -c "import o
 # Else, runs the script normally
 # Run-and-log function, DETACH controls detached execution
 ifeq ($(OS), Windows) # Windows
-RUN_AND_LOG = \
+RUN_AND_LOG = $(PYTHON) $(1)
+else
+RUN_AND_LOG = \ # Unix-like
 if [ -z "$(DETACH)" ]; then \
 	$(PYTHON) $(1); \
 else \
-	LOG_FILE=$(LOG_DIR)/$$(basename $(basename $(1))).log; \
-	start /B cmd /c "$(PYTHON) $(1)"; \
-	powershell -Command "Get-Content -Path '$$LOG_FILE' -Wait"; \
-fi
-else # Unix-like
-RUN_AND_LOG = \
-if [ -z "$(DETACH)" ]; then \
-	$(PYTHON) $(1); \
-else \
-	LOG_FILE=$(LOG_DIR)/$$(basename $(basename $(1))).log; \
+	LOG_FILE=$(LOG_DIR)/$$(basename $(1) .py).log; \
 	nohup $(PYTHON) $(1) > $$LOG_FILE 2>&1 & \
 	tail -f $$LOG_FILE; \
 fi
