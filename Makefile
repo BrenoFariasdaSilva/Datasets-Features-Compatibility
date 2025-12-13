@@ -23,10 +23,11 @@ LOG_DIR := ./Logs
 # Ensure logs directory exists (cross-platform)
 ENSURE_LOG_DIR := @mkdir -p $(LOG_DIR) 2>/dev/null || $(PYTHON_CMD) -c "import os; os.makedirs('$(LOG_DIR)', exist_ok=True)"
 
-# Run-and-log function, supports DETACH variable
-# If DETACH is set, runs the script in detached mode and tails the log file
-# Else, runs the script normally
-# Run-and-log function, DETACH controls detached execution
+# Run-and-log function
+# On Windows: simply runs the Python script normally
+# On Unix-like systems: supports DETACH variable
+#   - If DETACH is set, runs the script in detached mode and tails the log file
+#   - Else, runs the script normally
 ifeq ($(OS), Windows) # Windows
 RUN_AND_LOG = $(PYTHON) $(1)
 else
