@@ -755,9 +755,9 @@ def downsample_with_class_awareness(numeric_df, labels, sample_size, random_stat
    except Exception: # On any error, fallback to random sampling
       return numeric_df.sample(n=sample_size, random_state=random_state), None # Return random sample and no labels
 
-def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42):
+def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42, n_components=2):
    """
-   Initialize t-SNE with proper parameters and compute 2D embedding.
+   Initialize t-SNE with proper parameters and compute embedding.
 
    Handles compatibility with different TSNE versions by inspecting the constructor
    signature and setting 'n_iter' or 'max_iter' accordingly.
@@ -766,7 +766,8 @@ def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42):
    :param perplexity: t-SNE perplexity parameter
    :param n_iter: number of t-SNE optimization iterations
    :param random_state: random seed for reproducibility
-   :return: 2D numpy array of t-SNE embeddings
+   :param n_components: number of dimensions for t-SNE embedding (2 or 3)
+   :return: numpy array of t-SNE embeddings
    """
    
    try: # Inspect TSNE init signature for compatibility
@@ -775,7 +776,7 @@ def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42):
    except Exception: # If inspection fails
       sig = {} # Fallback to empty signature
 
-   tsne_kwargs = {"n_components": 2, "perplexity": perplexity, "random_state": random_state, "init": "pca"} # Base t-SNE args
+   tsne_kwargs = {"n_components": n_components, "perplexity": perplexity, "random_state": random_state, "init": "pca"} # Base t-SNE args
    if "n_iter" in sig: # Check for n_iter parameter
       tsne_kwargs["n_iter"] = n_iter # Set n_iter if supported
    elif "max_iter" in sig: # Check for max_iter parameter
@@ -785,7 +786,7 @@ def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42):
 
    tsne = TSNE(**tsne_kwargs) # Initialize t-SNE with compatible args
    X_emb = tsne.fit_transform(X) # Compute embedding
-   return X_emb # Return the 2D embedding
+   return X_emb # Return the embedding
 
 def save_tsne_plot(X_emb, labels, output_path, title):
    """
@@ -826,13 +827,51 @@ def save_tsne_plot(X_emb, labels, output_path, title):
    plt.savefig(output_path, dpi=150) # Save figure to disk
    plt.close() # Close figure to free memory
 
+def save_tsne_plot_3d(X_emb, labels, output_path, title):
+   """
+   Create and save a 3D t-SNE scatter plot.
+
+   If labels are provided, points are colored by class with a legend.
+   Otherwise, all points are plotted uniformly.
+
+   :param X_emb: 3D numpy array of t-SNE embeddings (shape: [n_samples, 3])
+   :param labels: pandas Series of class labels or None
+   :param output_path: absolute path where PNG will be saved
+   :param title: plot title string
+   :return: None
+   """
+
+   from mpl_toolkits.mplot3d import Axes3D # Import 3D plotting tools
+   
+   fig = plt.figure(figsize=(10, 8)) # Create matplotlib figure
+   ax = fig.add_subplot(111, projection='3d') # Create 3D axes
+   
+   if labels is not None: # Plot colored by class
+      labels_ser = pd.Series(labels) # Ensure labels are a pandas Series
+      counts = labels_ser.value_counts() # Count samples per class
+      unique = list(labels_ser.unique()) # Unique class labels (preserve order)
+      for cls in unique: # Plot each class separately
+         mask = (labels_ser == cls) # Boolean mask for class
+         ax.scatter(X_emb[mask, 0], X_emb[mask, 1], X_emb[mask, 2], label=f"{cls} ({int(counts.get(cls, 0))})", s=8) # Scatter plot for class with count in label
+      ax.legend(markerscale=2, fontsize="small") # Add legend for classes
+   else: # No labels provided
+      ax.scatter(X_emb[:, 0], X_emb[:, 1], X_emb[:, 2], s=8) # Plot all points uniformly
+   
+   ax.set_title(title) # Set plot title
+   ax.set_xlabel("t-SNE 1") # X-axis label
+   ax.set_ylabel("t-SNE 2") # Y-axis label
+   ax.set_zlabel("t-SNE 3") # Z-axis label
+   plt.tight_layout() # Adjust layout
+   plt.savefig(output_path, dpi=150) # Save figure to disk
+   plt.close() # Close figure to free memory
+
 def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=30, n_iter=1000, random_state=42, output_dir=None):
    """
-   Generate and save a 2D t-SNE visualization of a CSV dataset.
+   Generate and save both 2D and 3D t-SNE visualizations of a CSV dataset.
 
    This function loads a dataset, extracts numeric features, performs class-aware
-   downsampling (if needed), computes a 2D t-SNE embedding, and saves the result
-   as a PNG scatter plot with per-class coloring (if labels are detected).
+   downsampling (if needed), computes both 2D and 3D t-SNE embeddings, and saves
+   the results as PNG scatter plots with per-class coloring (if labels are detected).
 
    Downsampling strategy:
    - Classes with < 50 samples: all samples included
@@ -846,33 +885,39 @@ def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=3
    :param n_iter: number of t-SNE optimization iterations
    :param random_state: random seed for reproducible results
    :param output_dir: directory for saving PNG (defaults to dataset's RESULTS_DIR)
-   :return: basename of saved PNG file, or None on failure
+   :return: tuple of basenames of saved PNG files (2D, 3D), or (None, None) on failure
    """
    
-   verbose_output(f"{BackgroundColors.GREEN}Generating t-SNE plot for: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}") # Output start message for t-SNE generation
+   verbose_output(f"{BackgroundColors.GREEN}Generating t-SNE plots (2D and 3D) for: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}") # Output start message for t-SNE generation
 
    try: # Main try-catch block for overall failure handling
       numeric_df, labels = prepare_numeric_dataset(filepath, low_memory, sample_size, random_state) # Prepare numeric dataset
       if numeric_df is None: # Abort if preparation failed
-         return None # Indicate failure
+         return None, None # Indicate failure
 
       X = scale_features(numeric_df) # Scale features for t-SNE
 
       n_rows = X.shape[0] # Number of rows after downsampling
       if n_rows <= max(3, int(perplexity) + 1): # Check t-SNE feasibility
-         return None # Abort if too few samples for t-SNE
-
-      X_emb = initialize_and_fit_tsne(X, perplexity, n_iter, random_state) # Compute t-SNE embedding
+         return None, None # Abort if too few samples for t-SNE
 
       if output_dir is None: # Determine output directory
          output_dir = os.path.join(os.path.dirname(os.path.abspath(filepath)), "Data_Separability") # Default RESULTS_DIR under file folder
       os.makedirs(output_dir, exist_ok=True) # Ensure directory exists
 
       base = os.path.splitext(os.path.basename(filepath))[0] # Base filename
-      out_name = f"TSNE_3D_{base}.png" # Output PNG name
-      out_path = os.path.join(output_dir, out_name) # Absolute path
-
-      save_tsne_plot(X_emb, labels, out_path, f"t-SNE: {base}") # Create and save plot
+      
+      # Generate 2D t-SNE plot
+      X_emb_2d = initialize_and_fit_tsne(X, perplexity, n_iter, random_state, n_components=2) # Compute 2D t-SNE embedding
+      out_name_2d = f"TSNE_2D_{base}.png" # Output PNG name for 2D
+      out_path_2d = os.path.join(output_dir, out_name_2d) # Absolute path for 2D
+      save_tsne_plot(X_emb_2d, labels, out_path_2d, f"t-SNE 2D: {base}") # Create and save 2D plot
+      
+      # Generate 3D t-SNE plot
+      X_emb_3d = initialize_and_fit_tsne(X, perplexity, n_iter, random_state, n_components=3) # Compute 3D t-SNE embedding
+      out_name_3d = f"TSNE_3D_{base}.png" # Output PNG name for 3D
+      out_path_3d = os.path.join(output_dir, out_name_3d) # Absolute path for 3D
+      save_tsne_plot_3d(X_emb_3d, labels, out_path_3d, f"t-SNE 3D: {base}") # Create and save 3D plot
 
       try: # Try to delete DataFrame to free memory
          del numeric_df # Free numeric DataFrame
@@ -880,10 +925,10 @@ def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=3
          pass # Do nothing
       gc.collect() # Force garbage collection
 
-      return out_name # Return saved filename
+      return out_name_2d, out_name_3d # Return saved filenames
    except Exception as e: # Catch-all failure
       print(f"{BackgroundColors.RED}t-SNE generation failed for {filepath}: {e}{Style.RESET_ALL}") # Verbose error
-      return None # Indicate failure
+      return None, None # Indicate failure
 
 def get_dataset_file_info(filepath, low_memory=True):
    """
