@@ -109,6 +109,36 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def get_file_common_and_extras(headers_map, filepath, common_features):
+    """
+    Return the sorted common features list and extra columns for a specific file, using normalized feature names (lowercase + strip).
+
+    :param headers_map: dict mapping filepath -> list of column names
+    :param filepath: path for which to compute extras
+    :param common_features: set of features present in all files
+    :return: tuple (common_list, extras_list)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        file_cols = headers_map.get(filepath, [])  # Get headers for this file
+
+        if file_cols is not None:  # Normalize file columns
+            normalized_file_cols = set(col.strip().lower() for col in file_cols)  # Normalize file columns
+            normalized_common = set(col.strip().lower() for col in common_features)  # Normalize common features
+            extras = sorted(normalized_file_cols - normalized_common)  # Compute non-common extras
+        else:  # If no columns found for this file
+            extras = []  # No extras
+
+        common_list = (
+            sorted(col.strip().lower() for col in common_features) if common_features else []
+        )  # Sorted normalized shared features
+
+        return common_list, extras  # Return common + extras lists
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def reorder_report_columns(report_df: "pd.DataFrame") -> "pd.DataFrame":
     """
     Reorder report DataFrame columns to place preprocessing columns at the end.
