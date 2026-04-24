@@ -109,6 +109,36 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def coerce_numeric_columns(df):
+    """
+    Try to extract numeric columns from `df`. If no numeric columns are
+    present, attempt to coerce object/string columns to numeric values.
+
+    :param df: pandas DataFrame
+    :return: DataFrame with numeric columns (may be empty)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Extracting or coercing numeric columns from the DataFrame.{Style.RESET_ALL}"
+        )  # Output the verbose message
+
+        numeric_df = df.select_dtypes(include=["number"])  # Select numeric columns from the DataFrame; select_dtypes returns a new object so an explicit copy is not needed
+        if numeric_df.empty:  # If there are no numeric columns found
+            obj_cols = df.select_dtypes(
+                include=["object", "string"]
+            ).columns.tolist()  # List object/string columns as candidates
+            for c in obj_cols:  # Iterate over candidate object/string columns
+                coerced = pd.to_numeric(df[c], errors="coerce")  # Attempt to coerce the column to numeric, invalid -> NaN
+                if coerced.notna().sum() > 0:  # If coercion produced any non-NaN values
+                    numeric_df[c] = coerced  # Add the coerced column to the numeric DataFrame
+
+        return numeric_df  # Return the numeric-only DataFrame (may be empty)
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def fill_replace_and_drop(numeric_df):
     """
     Replace infinities, drop all-NaN columns, and fill remaining NaNs with
