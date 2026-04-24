@@ -109,6 +109,42 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def compute_group_features(files, low_memory=None):
+    """
+    Compute common and union features for a list of dataset files.
+
+    :param files: List of dataset file paths
+    :param low_memory: Whether to optimize memory when reading CSV headers
+    :return: Tuple (common_features_set, union_features_set)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Computing common and union features for dataset group...{Style.RESET_ALL}"
+        )  # Output computation message
+
+        if not files:  # No files, return empty sets
+            return set(), set()  # Return empty sets
+
+        headers_map = build_headers_map(files, low_memory=low_memory)  # Build headers map
+        common_features, _ = compute_common_features(headers_map)  # Compute common features
+
+        union_features = set()  # Initialize union set
+        for cols in headers_map.values():  # Iterate over each file's columns
+            if cols:  # If columns exist
+                union_features.update(
+                    [c.strip().lower() for c in cols]
+                )  # Normalize features: strip whitespace and lowercase
+        common_features = set(
+            [c.strip().lower() for c in common_features]
+        )  # Normalize common features: strip whitespace and lowercase
+
+        return set(common_features), union_features  # Return both sets
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def generate_pairwise_report(group_info):
     """
     Generate pairwise comparison rows from group info.
