@@ -109,6 +109,35 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def resolve_low_memory(cli_args: "argparse.Namespace", config: dict) -> bool:
+    """
+    Resolve the effective low_memory boolean using CLI overrides and config.
+
+    Priority: CLI (if provided) -> config.dataset_descriptor.low_memory -> default
+
+    :param cli_args: argparse.Namespace or dict of parsed CLI args (may be partial)
+    :param config: merged configuration dict
+    :return: final boolean for low_memory
+    """
+    
+    try:  # Wrap full function logic to ensure production-safe monitoring and fallback to defaults on any error
+        cli_val = None  # Initialize cli_val to None to detect if it was provided in CLI arguments
+        if isinstance(cli_args, dict):  # Support both argparse.Namespace and dict for CLI arguments to allow flexible calling contexts
+            cli_val = cli_args.get("low_memory", None)  # Attempt to get low_memory from dict, defaulting to None if not present
+        else:  # Assume argparse.Namespace and attempt to get low_memory attribute, defaulting to None if not present
+            cli_val = getattr(cli_args, "low_memory", None)  # Attempt to get low_memory from argparse.Namespace, defaulting to None if not present
+
+        if cli_val is not None:  # If CLI provided a value (even if False), it takes precedence over config and defaults
+            return bool(cli_val)  # Return the CLI value as boolean when it is explicitly provided, even if it is False
+
+        if isinstance(config, dict):  # Verify config is a dictionary before accessing nested keys to avoid type errors
+            return bool(config.get("dataset_descriptor", {}).get("low_memory", get_default_config().get("dataset_descriptor", {}).get("low_memory", True)))  # Return the config value for low_memory if it exists, otherwise fallback to default config value
+
+        return bool(get_default_config().get("dataset_descriptor", {}).get("low_memory", True))  # Fallback to default config value when config is not a dict or does not contain the expected keys
+    except Exception:  # Catch any exception during resolution to ensure production safety and fallback to defaults
+        return bool(get_default_config().get("dataset_descriptor", {}).get("low_memory", True))  # On any error during resolution, fallback to default config value for low_memory
+
+
 def init_runtime(config: dict):
     """
     Initialize runtime artifacts (logger) based on provided config.
