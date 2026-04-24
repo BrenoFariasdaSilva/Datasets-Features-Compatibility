@@ -109,6 +109,41 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def get_config(file_path: str = "config.yaml", cli_args: dict | None = None) -> dict:
+    """
+    Load and merge configuration with precedence CLI > config.yaml > defaults.
+
+    :param file_path: Path to the configuration YAML file (default: "config.yaml").
+    :param cli_args: Dictionary of CLI arguments that were parsed (optional).
+    :return: Merged configuration dictionary.
+    """
+
+    defaults = get_default_config()  # Load hard-coded default configuration
+    file_conf = load_config_file(file_path)  # Load configuration from disk
+    merged = deep_merge_dicts(defaults, file_conf)  # Deep-merge file config over defaults
+
+    if cli_args:  # Apply CLI overrides when provided
+        dd = merged.setdefault("dataset_descriptor", {})  # Access or create dataset_descriptor section
+        for key in [
+            "low_memory",
+            "include_preprocessing_metrics",
+            "include_data_augmentation_info",
+            "generate_table_image",
+            "table_image_format",
+            "csv_output_suffix",
+            "class_column_name",
+            "dropna_before_analysis",
+            "compute_class_distribution",
+            "compute_feature_statistics",
+            "round_decimals",
+        ]:  # Iterate over keys that may be overridden by CLI
+            if key in cli_args and cli_args[key] is not None:  # Verify the CLI arg key is present and non-None
+                dd[key] = cli_args[key]  # Apply the CLI override for this key
+        if "verbose" in cli_args and cli_args["verbose"] is not None:  # Verify verbose CLI arg is present and non-None
+            merged.setdefault("execution", {})["verbose"] = cli_args["verbose"]  # Apply verbose CLI override to execution section
+    return merged  # Return the fully merged configuration dictionary
+
+
 def resolve_low_memory(cli_args: "argparse.Namespace", config: dict) -> bool:
     """
     Resolve the effective low_memory boolean using CLI overrides and config.
@@ -2469,8 +2504,6 @@ def stripe(row):
         "background-color: #ffffff" if row.name % 2 == 0 else "background-color: #f2f2f2"
         for _ in row
     ]  # Return alternating background colors per column based on row index parity
-    
-            
 
 
 def apply_zebra_style(df):
