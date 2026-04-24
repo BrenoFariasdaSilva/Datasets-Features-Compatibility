@@ -109,6 +109,28 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def summarize_missing_values(df):
+    """
+    Summarizes missing values for the dataset.
+
+    :param df: The pandas DataFrame
+    :return: Summary string of missing values
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        missing_vals = df.isnull().sum()  # Get count of missing values per column
+        missing_summary = (
+            ", ".join([f"{col} ({cnt})" for col, cnt in missing_vals.items() if cnt > 0])
+            if missing_vals.sum() > 0
+            else "None"
+        )  # Create summary string or "None"
+
+        return missing_summary  # Return the missing values summary
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def summarize_classes(df, label_col):
     """
     Summarizes classes and class distributions if a label column exists.
