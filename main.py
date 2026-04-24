@@ -109,6 +109,55 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def generate_pairwise_report(group_info):
+    """
+    Generate pairwise comparison rows from group info.
+
+    :param group_info: Dict mapping group_name -> {"files": [...], "common": set(), "union": set()}
+    :return: List of dictionaries representing pairwise comparison rows
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        rows = []  # Initialize report row list
+        group_names = list(group_info.keys())  # List of group names
+
+        for i in range(len(group_names)):  # Iterate over first group
+            for j in range(i + 1, len(group_names)):  # Iterate over second group avoiding duplicates
+                a_name, b_name = group_names[i], group_names[j]  # Group names
+                a_info, b_info = group_info[a_name], group_info[b_name]  # Group info
+
+                if not a_info["files"] and not b_info["files"]:  # Skip if both have no files
+                    continue  # Proceed to next pair
+
+                common_between = sorted(a_info["union"] & b_info["union"])  # Features common to both groups
+                extras_a = sorted(a_info["union"] - b_info["union"])  # Features in A not in B
+                extras_b = sorted(b_info["union"] - a_info["union"])  # Features in B not in A
+
+                n_common = int(len(common_between))  # Integer count of common features
+                n_extra_a = int(len(extras_a))  # Integer count of extra features in A
+                n_extra_b = int(len(extras_b))  # Integer count of extra features in B
+
+                row = {  # Construct row dictionary
+                    "Dataset A": a_name,  # First dataset group name
+                    "Dataset B": b_name,  # Second dataset group name
+                    "Files in A": len(a_info["files"]),  # Number of files in A
+                    "Files in B": len(b_info["files"]),  # Number of files in B
+                    "N Common Features": n_common,  # Integer count of common features between A and B
+                    "Common Features (A ∩ B)": ", ".join(common_between) or "None",  # Common features between A and B
+                    "N Extra Features in A": n_extra_a,  # Integer count of extra features present in A but not in B
+                    "Extra Features in A (A \\ B)": ", ".join(extras_a) or "None",  # Extra features in A
+                    "N Extra Features in B": n_extra_b,  # Integer count of extra features present in B but not in A
+                    "Extra Features in B (B \\ A)": ", ".join(extras_b) or "None",  # Extra features in B
+                }
+
+                rows.append(row)  # Append to report rows
+
+        return rows  # Return the list of report rows
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def adjust_rows_for_group(report_rows, group_name):
     """
     Adjust pairwise rows so that the target group always appears as Dataset A.
