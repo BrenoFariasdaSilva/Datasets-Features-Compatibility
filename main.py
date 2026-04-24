@@ -109,6 +109,79 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def reorder_report_columns(report_df: "pd.DataFrame") -> "pd.DataFrame":
+    """
+    Reorder report DataFrame columns to place preprocessing columns at the end.
+
+    :param report_df: DataFrame to reorder.
+    :return: Reordered DataFrame.
+    """
+
+    try:  # Guard the helper with same exception handling pattern used across module
+        preprocessing_keys = [  # Known preprocessing-related keys to move to the end when present
+            "original_num_rows",
+            "rows_after_nan_removal",
+            "removed_rows_nan",
+            "removed_rows_nan_proportion",
+            "rows_after_inf_removal",
+            "removed_rows_inf",
+            "rows_after_nan_inf_removal",
+            "removed_rows_nan_inf",
+            "removed_rows_nan_inf_proportion",
+            "rows_after_preprocessing",
+            "original_num_features",
+            "features_after_zero_variance_removal",
+            "removed_zero_variance_features",
+            "removed_zero_variance_features_proportion",
+            "features_after_preprocessing",
+            "dropped_non_informative_features",
+            "dropped_non_informative_features_proportion",
+            "features_transformed_for_experiment",
+            "features_transformed_for_experiment_proportion",
+            "features_cast_to_float64_int64",
+            "features_encoded_categorical",
+            "preprocessing_metrics",
+        ]  # End preprocessing key list
+
+        desired_front = [  # Desired primary header order before preprocessing columns
+            "#",
+            "Dataset Name",
+            "Size (GB)",
+            "Number of Samples",
+            "Number of Features",
+            "Feature Types",
+            "Categorical Features (object/string)",
+            "Missing Values",
+            "Classes",
+            "Class Distribution",
+            "data_augmentation_samples",
+            "Headers Match All Files",
+            "Common Features (in all files)",
+            "Extra Features (not in all files)",
+            "t-SNE Plot",
+        ]  # End desired front columns
+
+        ordered_cols: list[str] = []  # Initialize ordered columns accumulator
+        for column in desired_front:  # Iterate desired front list
+            if column in report_df.columns and column not in ordered_cols:  # Add when present and not duplicated
+                ordered_cols.append(column)  # Append desired front column when found
+
+        for column in report_df.columns:  # Preserve original column discovery order for remaining non-preprocessing fields
+            if column not in ordered_cols and column not in preprocessing_keys:  # Only include non-preprocessing and not-yet-added columns
+                ordered_cols.append(column)  # Append the remaining non-preprocessing column
+
+        for column in preprocessing_keys:  # Iterate known preprocessing keys to place them at the end
+            if column in report_df.columns and column not in ordered_cols:  # Add only when present and not already added
+                ordered_cols.append(column)  # Append preprocessing column
+
+        if ordered_cols:  # If we built an ordering
+            return report_df[[column for column in ordered_cols if column in report_df.columns]]  # Return reordered DataFrame
+        return report_df  # Return original DataFrame when no ordering was computed
+    except Exception as e:  # Preserve module-wide exception handling semantics
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def write_report(report_rows, base_dir, output_filename, config: dict | None = None):
     """
     Write the report rows to a CSV file.
