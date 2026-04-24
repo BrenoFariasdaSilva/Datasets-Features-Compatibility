@@ -109,6 +109,39 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def load_dataset(filepath, low_memory=None):
+    """
+    Loads a dataset from a CSV file.
+
+    :param filepath: Path to the CSV file
+    :param low_memory: Whether to use low memory mode (default: True)
+    :return: Pandas DataFrame
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        low_memory = True if low_memory is None else bool(low_memory)  # Default to True if low_memory is not provided
+        
+        try:  # Try to load the dataset
+            with warnings.catch_warnings():  # Suppress DtypeWarning warnings
+                warnings.simplefilter("ignore", pd.errors.DtypeWarning)  # Ignore DtypeWarning warnings
+                try:  # Attempt to read file using UTF-8 as primary encoding
+                    df = pd.read_csv(filepath, low_memory=low_memory, encoding="utf-8")  # Read dataset using UTF-8 encoding
+                except UnicodeDecodeError:  # If UTF-8 decoding fails, try legacy encodings
+                    try:  # Attempt to read file using Latin-1 as fallback encoding
+                        df = pd.read_csv(filepath, low_memory=low_memory, encoding="latin1")  # Read dataset using Latin-1 encoding
+                    except UnicodeDecodeError:  # If Latin-1 decoding also fails, try CP1252 as final fallback
+                        df = pd.read_csv(filepath, low_memory=low_memory, encoding="cp1252")  # Read dataset using CP1252 encoding
+                df.columns = df.columns.str.strip()  # Remove leading/trailing whitespace from column names
+
+            return df  # Return the DataFrame
+        except Exception as e:  # If an error occurs
+            print(f"{BackgroundColors.RED}Error loading {BackgroundColors.GREEN}{filepath}: {e}{Style.RESET_ALL}")
+            return None  # Return None if an error occurs
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def sanitize_feature_names(columns):
     r"""
     Sanitize column names by removing special JSON characters that LightGBM doesn't support.
