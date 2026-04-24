@@ -109,6 +109,56 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def prepare_numeric_dataset_from_df(df, sample_size=5000, random_state=42):
+    """
+    Prepare numeric DataFrame and labels from an already-loaded DataFrame.
+
+    :param df: Pandas DataFrame to prepare numeric features from.
+    :param sample_size: Maximum number of rows to keep after optional downsampling.
+    :param random_state: Random seed for reproducible downsampling.
+    :return: Tuple of (numeric_df, labels) or (None, None) on failure.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        if df is None:  # Verify that a valid DataFrame was provided
+            return None, None  # Abort when no DataFrame is available
+
+        cleaned = preprocess_dataframe(df, remove_zero_variance=False)  # Apply basic cleaning without removing zero-variance columns
+        if cleaned is None:  # Verify preprocessing did not fail
+            return None, None  # Abort if preprocessing produced no valid output
+
+        numeric_df = coerce_numeric_columns(cleaned)  # Extract or coerce numeric columns from cleaned DataFrame
+        if numeric_df is None:  # Verify coercion did not fail
+            del cleaned  # Release cleaned DataFrame before returning from failed coercion path
+            return None, None  # Abort when no numeric columns could be obtained
+
+        numeric_df = fill_replace_and_drop(numeric_df)  # Replace infinities, drop all-NaN columns and fill remaining NaNs
+        if numeric_df is None:  # Verify fill and drop did not fail
+            del cleaned  # Release cleaned DataFrame before returning from failed numeric cleanup path
+            return None, None  # Abort when numeric frame became invalid after cleaning
+
+        if numeric_df.shape[0] == 0 or numeric_df.shape[1] == 0:  # Verify numeric frame is not empty after all cleaning steps
+            del numeric_df  # Release empty numeric DataFrame before returning
+            del cleaned  # Release cleaned DataFrame before returning
+            return None, None  # Abort when no usable rows or columns remain
+
+        label_col = detect_label_column(cleaned.columns)  # Detect label column from cleaned DataFrame columns
+        labels = cleaned[label_col] if label_col in cleaned.columns else None  # Extract labels when column is present
+
+        if numeric_df.shape[0] > sample_size:  # Verify whether downsampling is required
+            numeric_df, labels = downsample_with_class_awareness(
+                numeric_df, labels, sample_size, random_state
+            )  # Downsample while preserving class distribution
+
+        del cleaned  # Release cleaned DataFrame after deriving numeric frame and labels
+        gc.collect()  # Trigger garbage collection after releasing large intermediate DataFrame
+
+        return numeric_df, labels  # Return numeric features and corresponding labels
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def scale_features(numeric_df):
     """
     Standardize numeric features to zero mean and unit variance. Fall back to
