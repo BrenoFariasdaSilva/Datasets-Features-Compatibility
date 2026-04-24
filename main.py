@@ -109,6 +109,54 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def allocate_with_min(initial_alloc, counts, max_samples):
+    """
+    Distribute remaining capacity after satisfying per-class minima.
+
+    Starting from `initial_alloc` (which already enforces per-class minima),
+    this function distributes the remaining available capacity proportionally
+    to classes that still have unused samples. It performs integer flooring
+    and then distributes leftover units according to fractional remainders
+    to produce a final integer allocation per class.
+
+    :param initial_alloc: dict mapping class -> allocated minima
+    :param counts: pandas Series with per-class counts
+    :param max_samples: total maximum samples to allocate
+    :return: dict mapping class -> final allocation
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        alloc = dict(initial_alloc)  # Start with initial allocations
+        remaining_local = max_samples - sum(initial_alloc.values())  # Remaining capacity after minima
+        rem_avail_local = {c: max(0, int(counts[c]) - alloc[c]) for c in counts.index}  # Remaining available per class
+        total_rem_avail_local = sum(rem_avail_local.values())  # Total remaining available
+
+        if total_rem_avail_local > 0 and remaining_local > 0:  # Only proceed if there is capacity to distribute
+            float_add_local = {
+                c: (remaining_local * rem_avail_local[c] / total_rem_avail_local) for c in counts.index
+            }  # Proportional fractional add
+            add_alloc_local = {c: int(float_add_local[c]) for c in counts.index}  # Base integer additional allocation
+            assigned_local = sum(add_alloc_local.values())  # Sum of base additional allocations
+            leftover_local = remaining_local - assigned_local  # Leftover after flooring
+            remainders_local = sorted(
+                counts.index, key=lambda c: (float_add_local[c] - add_alloc_local[c]), reverse=True
+            )  # Order by fractional remainder
+
+            for c in remainders_local:  # Distribute leftover one-by-one
+                if leftover_local <= 0:  # Stop when no leftover remains
+                    break  # Exit distribution
+                if add_alloc_local[c] < rem_avail_local[c]:  # Only add if class can accept more
+                    add_alloc_local[c] += 1  # Increment allocation for this class
+                    leftover_local -= 1  # Decrease leftover count
+            for c in counts.index:  # Finalize allocations applying available caps
+                alloc[c] += min(add_alloc_local.get(c, 0), rem_avail_local[c])  # Cap addition by remaining available
+
+        return alloc  # Return finalized allocations
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def proportional_alloc(counts, max_samples):
     """
     Compute a proportional allocation across classes when minima cannot be met.
