@@ -109,6 +109,64 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def prepare_numeric_dataset(filepath, low_memory=None, sample_size=5000, random_state=42):
+    """
+    Load CSV dataset, clean it, extract numeric features, optionally downsample,
+    and return numeric DataFrame and labels.
+
+    :param filepath: path to CSV file
+    :param low_memory: whether to use low-memory mode when loading CSV
+    :param sample_size: maximum number of rows to keep (downsampling threshold)
+    :param random_state: random seed for reproducibility
+    :return: tuple (numeric_df, labels) or (None, None) on failure
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        df = load_dataset(filepath, low_memory=low_memory)  # Load CSV into DataFrame
+        if df is None:  # If loading failed
+            return None, None  # Abort
+
+        cleaned = preprocess_dataframe(df, remove_zero_variance=False)  # Basic cleaning
+        if cleaned is None:  # If cleaning failed
+            del df  # Release the loaded DataFrame before returning from failed cleaning path
+            return None, None  # Abort
+
+        numeric_df = coerce_numeric_columns(cleaned)  # Extract numeric features
+        if numeric_df is None:  # If extraction failed
+            del cleaned  # Release cleaned DataFrame before returning from failed extraction path
+            del df  # Release original DataFrame before returning from failed extraction path
+            return None, None  # Abort
+
+        numeric_df = fill_replace_and_drop(numeric_df)  # Clean numeric frame
+        if numeric_df is None:  # If cleaning failed
+            del cleaned  # Release cleaned DataFrame before returning from failed numeric cleanup path
+            del df  # Release original DataFrame before returning from failed numeric cleanup path
+            return None, None  # Abort
+
+        if numeric_df.shape[0] == 0 or numeric_df.shape[1] == 0:  # No numeric data
+            del numeric_df  # Release empty numeric DataFrame before returning
+            del cleaned  # Release cleaned DataFrame before returning
+            del df  # Release original DataFrame before returning
+            return None, None  # Abort
+
+        label_col = detect_label_column(cleaned.columns)  # Detect label column
+        labels = cleaned[label_col] if label_col in cleaned.columns else None  # Extract labels if present
+
+        if numeric_df.shape[0] > sample_size:  # Downsample if too many rows
+            numeric_df, labels = downsample_with_class_awareness(
+                numeric_df, labels, sample_size, random_state
+            )  # Class-aware downsampling
+
+        del cleaned  # Release cleaned DataFrame after deriving numeric frame and labels
+        del df  # Release original DataFrame after deriving numeric frame and labels
+        gc.collect()  # Trigger garbage collection after releasing large intermediate DataFrames
+
+        return numeric_df, labels  # Return numeric DataFrame and labels
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def prepare_numeric_dataset_from_df(df, sample_size=5000, random_state=42):
     """
     Prepare numeric DataFrame and labels from an already-loaded DataFrame.
