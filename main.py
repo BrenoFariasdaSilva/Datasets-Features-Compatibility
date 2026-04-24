@@ -1351,10 +1351,15 @@ def main():
 
 
 if __name__ == "__main__":
-   """
-   This is the standard boilerplate that calls the main() function.
+    """
+    This is the standard boilerplate that calls the main() function.
 
-   :return: None
-   """
+    :return: None
+    """
 
-   main()  # Call the main function
+    try:  # Protect main execution to ensure errors are reported and notified
+        configure_multiprocessing_startup()  # Configure multiprocessing start method once before executing main flow
+        main()  # Call the main function
+    except Exception as e:  # Catch any unhandled exception from main
+        print(str(e))  # Print the exception message to terminal for logs
+        raise  # Re-raise to avoid silent failure and preserve original crash behavior
