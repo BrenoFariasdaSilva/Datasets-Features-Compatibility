@@ -109,6 +109,38 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def compute_common_features(headers_map):
+    """
+    Compute the intersection of headers across all files and determine
+    whether all headers match exactly (ignoring case and surrounding whitespace).
+
+    :param headers_map: dict mapping filepath -> list of column names
+    :return: tuple (common_features_set, headers_match_all_bool)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        try:  # Normalize all headers to lowercase and strip whitespace
+            normalized_sets = [
+                set(col.strip().lower() for col in v) for v in headers_map.values() if v
+            ]  # List of normalized header sets
+            if normalized_sets:  # If there are valid header sets
+                common = set.intersection(*normalized_sets)  # Compute intersection across all files
+            else:  # If no headers available
+                common = set()  # Empty intersection
+        except Exception:  # Catch unexpected failures
+            common = set()  # Fallback to empty set
+
+        unique_normalized_sets = {
+            frozenset(col.strip().lower() for col in v) for v in headers_map.values() if v
+        }  # Unique normalized header sets
+        match_all = len(unique_normalized_sets) <= 1  # True if all header sets are identical
+
+        return common, match_all  # Return shared features and match flag
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def load_dataset(filepath, low_memory=None):
     """
     Loads a dataset from a CSV file.
