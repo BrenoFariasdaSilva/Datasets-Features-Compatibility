@@ -109,6 +109,174 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def get_dataset_file_info(filepath, df=None, low_memory=None):
+    """
+    Extract dataset information from a CSV file and return it as a dictionary.
+
+    :param filepath: Path to the CSV file.
+    :param df: Optional pre-loaded pandas DataFrame to avoid redundant disk reads.
+    :param low_memory: Whether to use low memory mode when loading the CSV (default: True).
+    :return: Dictionary containing dataset information.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Extracting dataset information from: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}"
+        )  # Output start message for dataset info extraction
+        verbose_output(f"{BackgroundColors.GREEN}Processing dataset: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}")  # Log dataset processing start without breaking the active progress bar
+
+        if df is None:
+            df = load_dataset(filepath, low_memory)  # Load the dataset
+
+        if df is None:  # If the dataset could not be loaded
+            return None  # Return None
+
+        original_num_rows = len(df)  # Capture original number of rows immediately after read
+        original_num_features = df.shape[1] if hasattr(df, "shape") else 0  # Capture original feature count
+
+        nan_mask = df.isna().any(axis=1)  # Build boolean mask for rows containing any NaN/null values
+        rows_after_nan_removal = int((~nan_mask).sum())  # Capture rows remaining after NaN/null filtering via mask count
+        removed_rows_nan = original_num_rows - rows_after_nan_removal  # Compute removed row count due to NaN/null filtering
+        removed_rows_nan = removed_rows_nan if removed_rows_nan >= 0 else 0  # Clamp negative values to zero for safety
+        if original_num_rows > 0:  # Verify original row count is non-zero before percentage division
+            removed_rows_nan_proportion = round(removed_rows_nan / float(original_num_rows), 6)  # Compute rounded removed-row proportion for NaN/null filtering
+        else:  # Handle zero-row datasets without division
+            removed_rows_nan_proportion = 0.0  # Set removed-row proportion to zero when no rows are present
+
+        numeric_cols_after_nan = df.select_dtypes(include=["number"]).columns  # Identify numeric columns to detect infinite values after NaN removal
+        if len(numeric_cols_after_nan) > 0:  # Only compute infinite masks when numeric columns exist
+            inf_mask_after_nan = df[numeric_cols_after_nan].isin([np.inf, -np.inf]).any(axis=1)  # Identify rows with any +/-inf in numeric columns
+        else:  # When no numeric columns exist
+            inf_mask_after_nan = pd.Series([False] * len(df), index=df.index)  # Create false mask to avoid errors
+        valid_nan_mask = ~nan_mask  # Build non-NaN mask to reuse across metric computations
+        valid_inf_mask = ~inf_mask_after_nan  # Build non-infinite mask to reuse across metric computations
+        valid_nan_inf_mask = valid_nan_mask & valid_inf_mask  # Combine masks to represent rows surviving NaN and infinite filtering
+        rows_after_nan_inf_removal = int(valid_nan_inf_mask.sum())  # Capture rows remaining after NaN+infinite filtering
+        removed_rows_inf = rows_after_nan_removal - rows_after_nan_inf_removal  # Compute rows removed due to infinite filtering specifically
+        rows_after_inf_removal = rows_after_nan_inf_removal  # Record rows after infinite removal (applied after NaN removal)
+        removed_rows_nan_inf = original_num_rows - rows_after_nan_inf_removal  # Compute total rows removed by NaN+infinite filtering combined
+        removed_rows_nan_inf = removed_rows_nan_inf if removed_rows_nan_inf >= 0 else 0  # Clamp negative values to zero for safety
+        if original_num_rows > 0:  # Verify original row count is non-zero before percentage division
+            removed_rows_nan_inf_proportion = round(removed_rows_nan_inf / float(original_num_rows), 6)  # Compute rounded removed-row proportion for NaN+infinite filtering
+        else:  # Handle zero-row datasets without division
+            removed_rows_nan_inf_proportion = 0.0  # Set removed-row proportion to zero when no rows are present
+
+        numeric_cols_after_nan_inf = numeric_cols_after_nan  # Reuse numeric columns for zero-variance analysis after NaN+inf removals
+        zero_var_cols = []  # Initialize zero-variance feature list
+        if len(numeric_cols_after_nan_inf) > 0:  # Verify numeric features are available before variance computation
+            df_after_nan_inf_numeric = df.loc[valid_nan_inf_mask, numeric_cols_after_nan_inf]  # Materialize filtered numeric frame only for variance computation
+            variances_after_nan_inf = df_after_nan_inf_numeric.var(axis=0, ddof=0)  # Compute variance for each numeric feature after NaN+inf filtering
+            zero_var_cols = variances_after_nan_inf[variances_after_nan_inf == 0].index.tolist()  # Collect numeric features with zero variance
+            del df_after_nan_inf_numeric  # Release filtered numeric frame immediately after variance computation
+            del variances_after_nan_inf  # Release variance series immediately after extracting zero-variance column names
+        removed_zero_variance_features = len(zero_var_cols)  # Capture number of removed zero-variance numerical features
+        if original_num_features > 0:  # Verify original feature count is non-zero before percentage division
+            removed_zero_variance_features_proportion = round(removed_zero_variance_features / float(original_num_features), 6)  # Compute rounded removed-feature proportion for zero-variance removal
+        else:  # Handle zero-feature datasets without division
+            removed_zero_variance_features_proportion = 0.0  # Set removed-feature proportion to zero when no features are present
+
+        dropped_non_informative_features = 0  # Preserve current behavior because non-informative identifier/metadata dropping is not applied in this module
+        if original_num_features > 0:  # Verify original feature count is non-zero before percentage division
+            dropped_non_informative_features_proportion = round(dropped_non_informative_features / float(original_num_features), 6)  # Compute rounded dropped-feature proportion for identifier/metadata step
+        else:  # Handle zero-feature datasets without division
+            dropped_non_informative_features_proportion = 0.0  # Set dropped-feature proportion to zero when no features are present
+
+        features_after_zero_variance_removal = int(df.shape[1]) - int(removed_zero_variance_features)  # Compute feature count after zero-variance removal using original feature count baseline
+        features_after_zero_variance_removal = features_after_zero_variance_removal if features_after_zero_variance_removal >= 0 else 0  # Clamp negative values to zero for safety
+
+        cleaned_df = preprocess_dataframe(df)  # Preprocess the DataFrame
+
+        rows_after_preprocessing = len(cleaned_df)  # Capture rows after preprocessing
+        features_after_preprocessing = cleaned_df.shape[1] if hasattr(cleaned_df, "shape") else 0  # Capture features after preprocessing
+        preprocessing_step_metrics = cleaned_df.attrs.get("preprocessing_metrics", {}) if hasattr(cleaned_df, "attrs") else {}  # Capture structured preprocessing step metrics from DataFrame metadata
+
+        label_col, classes_str, class_dist_str = extract_classes_and_distribution(cleaned_df)  # Identify label column and extract classes/distribution
+        n_samples, n_features, n_numeric, n_int, n_categorical, n_other, categorical_cols_str = summarize_features(
+            cleaned_df
+        )  # Summarize features
+        missing_summary = summarize_missing_values(cleaned_df)  # Summarize missing values
+
+        num_labels, labels_list = extract_labels_info(cleaned_df)  # Extract number of unique labels and the sorted labels list
+
+        labels_list_str = format_labels_list(labels_list)  # Format labels list into stable string for CSV inclusion
+
+        feature_view_df = cleaned_df.drop(columns=[label_col], errors="ignore") if label_col else cleaned_df  # Build feature-only frame by excluding the label column when available
+        numeric_feature_view = feature_view_df.select_dtypes(include=["number"])  # Extract numeric features for cast-to-float64/int64 accounting
+        categorical_feature_view = feature_view_df.select_dtypes(exclude=["number"])  # Extract non-numeric features for categorical encoding accounting
+        features_cast_to_float64_int64 = int((~numeric_feature_view.dtypes.isin([np.dtype("float64"), np.dtype("int64")])).sum()) if not numeric_feature_view.empty else 0  # Count numeric features whose dtypes differ from float64/int64
+        features_encoded_categorical = int(categorical_feature_view.shape[1])  # Count categorical features that require ordinal or one-hot encoding
+        features_transformed_for_experiment = int(features_cast_to_float64_int64) + int(features_encoded_categorical)  # Compute total transformed feature count for experiment-level preprocessing
+        if features_after_preprocessing > 0:  # Verify post-preprocessing feature count is non-zero before percentage division
+            features_transformed_for_experiment_proportion = round(features_transformed_for_experiment / float(features_after_preprocessing), 6)  # Compute rounded transformed-feature proportion after preprocessing
+        else:  # Handle zero-feature datasets without division
+            features_transformed_for_experiment_proportion = 0.0  # Set transformed-feature proportion to zero when no features are present
+
+        try:  # Try to get file size in GB
+            size_bytes = os.path.getsize(filepath)  # Get file size in bytes
+            size_gb = size_bytes / (1024**3)  # Convert bytes to gigabytes
+            size_gb_str = f"{size_gb:.3f}"  # Format size to 3 decimal places
+        except Exception:  # If an error occurs
+            size_gb_str = "N/A"  # Set size to N/A if error occurs
+
+        result = {  # Return the dataset information as a dictionary
+            "Dataset Name": os.path.basename(filepath),
+            "Size (GB)": size_gb_str,
+            "Number of Samples": f"{n_samples:,}",  # Format with commas for readability
+            "Number of Features": f"{n_features:,}",  # Format with commas for readability
+            "Number of Labels": f"{num_labels:,}",  # Format with commas for readability for label count
+            "Labels List": labels_list_str,  # Stable string representation of detected labels
+            "original_num_rows": original_num_rows,  # Rows immediately after reading CSV
+            "rows_after_nan_removal": rows_after_nan_removal,  # Rows remaining after removing NaN/null values only
+            "removed_rows_nan": removed_rows_nan,  # Rows removed by NaN/null filtering step
+            "removed_rows_nan_proportion": removed_rows_nan_proportion,  # Proportion of rows removed by NaN/null filtering step
+            "rows_after_inf_removal": rows_after_inf_removal,  # Rows remaining after removing infinite values only
+            "removed_rows_inf": removed_rows_inf,  # Rows removed by infinite-value filtering step
+            "rows_after_nan_inf_removal": rows_after_nan_inf_removal,  # Rows remaining after removing NaN+infinite values
+            "removed_rows_nan_inf": removed_rows_nan_inf,  # Rows removed by combined NaN+infinite filtering step
+            "removed_rows_nan_inf_proportion": removed_rows_nan_inf_proportion,  # Proportion of rows removed by combined NaN+infinite filtering step
+            "rows_after_preprocessing": rows_after_preprocessing,  # Rows after preprocessing
+            "original_num_features": original_num_features,  # Features before preprocessing
+            "features_after_zero_variance_removal": features_after_zero_variance_removal,  # Features remaining after zero-variance numerical feature removal
+            "removed_zero_variance_features": removed_zero_variance_features,  # Zero-variance numerical features removed in preprocessing
+            "removed_zero_variance_features_proportion": removed_zero_variance_features_proportion,  # Proportion of zero-variance numerical features removed
+            "features_after_preprocessing": features_after_preprocessing,  # Features after preprocessing
+            "dropped_non_informative_features": dropped_non_informative_features,  # Non-informative identifier/metadata features removed in this module
+            "dropped_non_informative_features_proportion": dropped_non_informative_features_proportion,  # Proportion of non-informative identifier/metadata features removed
+            "features_transformed_for_experiment": features_transformed_for_experiment,  # Features transformed for dtype enforcement and categorical encoding per experiment
+            "features_transformed_for_experiment_proportion": features_transformed_for_experiment_proportion,  # Proportion of transformed features for dtype enforcement and categorical encoding per experiment
+            "features_cast_to_float64_int64": features_cast_to_float64_int64,  # Numeric features requiring cast to float64/int64
+            "features_encoded_categorical": features_encoded_categorical,  # Categorical features requiring ordinal or one-hot encoding
+            "preprocessing_metrics": preprocessing_step_metrics,  # Structured per-step preprocessing metrics for isolated CSV mapping
+            "Feature Types": f"{n_numeric} numeric (float64), {n_int} integer (int64), {n_categorical} categorical (object/category/bool/string), {n_other} other",
+            "Categorical Features (object/string)": categorical_cols_str,
+            "Missing Values": missing_summary,
+            "Classes": classes_str,
+            "Class Distribution": class_dist_str,
+        }
+
+        try:  # Attempt to retrieve augmented sample count for this dataset
+            aug_count = get_augmented_sample_count(filepath, None)  # Get augmented sample count from WGANGP output directory
+        except Exception:  # Re-raise on failure to preserve original semantics
+            raise  # Re-raise to preserve original failure semantics
+        result["data_augmentation_samples"] = int(aug_count)  # Store integer augmented sample count in result dict
+
+        del nan_mask  # Release NaN mask to reduce retained memory after metrics extraction
+        del inf_mask_after_nan  # Release infinite-value mask to reduce retained memory after metrics extraction
+        del valid_nan_mask  # Release non-NaN mask to reduce retained memory after metrics extraction
+        del valid_inf_mask  # Release non-infinite mask to reduce retained memory after metrics extraction
+        del valid_nan_inf_mask  # Release combined valid-row mask to reduce retained memory after metrics extraction
+        del feature_view_df  # Release feature-view DataFrame reference after derived metrics are computed
+        del numeric_feature_view  # Release numeric feature view reference after dtype accounting
+        del categorical_feature_view  # Release categorical feature view reference after dtype accounting
+        gc.collect()  # Trigger garbage collection after releasing large intermediate objects
+
+        verbose_output(f"{BackgroundColors.GREEN}Finished processing dataset: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}")  # Print message indicating completion of processing for dataset
+        return result  # Return the dataset information
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def get_file_common_and_extras(headers_map, filepath, common_features):
     """
     Return the sorted common features list and extra columns for a specific file, using normalized feature names (lowercase + strip).
