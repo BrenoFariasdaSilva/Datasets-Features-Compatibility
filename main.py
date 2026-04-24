@@ -109,6 +109,47 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def summarize_features(df):
+    """
+    Summarizes number of samples, features, and feature types.
+    Ensures the sum of feature types matches the number of columns.
+
+    :param df: pandas DataFrame
+    :return: Tuple containing:
+             n_samples, n_features, n_numeric, n_int, n_categorical, n_other, categorical columns string
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        n_samples, n_features = df.shape  # Get number of samples and features
+        dtypes = df.dtypes  # Get data types of each column
+
+        n_numeric = dtypes[dtypes == "float64"].count()  # Count float64 types
+        n_int = dtypes[dtypes == "int64"].count() + dtypes[dtypes == "Int64"].count()  # Count int64 and Int64 types
+        n_categorical = dtypes[dtypes.isin(["object", "category", "bool", "string"])].count()  # Count categorical types
+
+        n_other = n_features - (n_numeric + n_int + n_categorical)  # Anything else goes to "other"
+
+        categorical_cols = df.select_dtypes(
+            include=["object", "category", "bool", "string"]
+        ).columns.tolist()  # List of categorical columns
+        categorical_cols_str = (
+            ", ".join(categorical_cols) if categorical_cols else "None"
+        )  # Create string of categorical columns or "None"
+
+        return (
+            n_samples,
+            n_features,
+            n_numeric,
+            n_int,
+            n_categorical,
+            n_other,
+            categorical_cols_str,
+        )  # Return the summary values
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def summarize_missing_values(df):
     """
     Summarizes missing values for the dataset.
