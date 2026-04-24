@@ -109,6 +109,59 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def build_preprocessing_summary_dataframe(metrics_list):
+    """
+    Build a DataFrame for preprocessing summary from a list of metrics dicts.
+
+    :param metrics_list: List of dicts produced by `collect_preprocessing_metrics`
+    :return: pandas.DataFrame with fixed column order
+    """
+
+    try:  # Wrap function body for consistency with module style
+        cols = [
+            "filename",
+            "original_num_rows",
+            "rows_after_nan_inf_removal",
+            "removed_rows_nan_inf",
+            "removed_rows_nan_inf_proportion",
+            "rows_after_preprocessing",
+            "removed_rows",
+            "removed_rows_proportion",
+            "original_num_features",
+            "features_after_zero_variance_removal",
+            "removed_zero_variance_features",
+            "removed_zero_variance_features_proportion",
+            "features_after_preprocessing",
+            "removed_features",
+            "removed_features_proportion",
+            "dropped_non_informative_features",
+            "dropped_non_informative_features_proportion",
+            "features_transformed_for_experiment",
+            "features_transformed_for_experiment_proportion",
+            "features_cast_to_float64_int64",
+            "features_encoded_categorical",
+        ]  # Define exact column order required by spec
+
+        df = pd.DataFrame(metrics_list)  # Create DataFrame from provided metrics list
+        for c in cols:  # Ensure all expected columns exist in DataFrame
+            if c not in df.columns:  # If missing column
+                df[c] = None  # Add column filled with None to preserve schema
+        df = df[cols]  # Reorder columns to the required fixed order
+
+        if not df.empty:  # Verify that there is at least one dataset row before computing averages
+            numeric_cols = [c for c in cols if c != "filename"]  # Build numeric columns list by excluding filename
+            avg_row: dict[str, Any] = {"filename": "AVERAGE"}  # Initialize the average row with a fixed label and explicit flexible value types
+            for c in numeric_cols:  # Iterate over all numeric columns that require an average value
+                series_num = pd.to_numeric(df[c], errors="coerce")  # Convert each column to numeric while coercing invalid values
+                avg_row[c] = round(float(series_num.mean()), 6) if series_num.notna().any() else None  # Compute rounded mean only when valid values exist
+            df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)  # Append the average row as the final record
+
+        return df  # Return the prepared DataFrame
+    except Exception as e:  # Preserve exception handling
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def save_preprocessing_summary_csv(df, base_dir, filename="preprocessing_summary.csv", config: dict | None = None):
     """
     Save the preprocessing summary DataFrame to the results directory for the given base_dir.
