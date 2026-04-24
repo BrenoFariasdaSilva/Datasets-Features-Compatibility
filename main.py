@@ -109,6 +109,23 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def load_config_file(path: str = "config.yaml") -> dict:
+    """
+    Load configuration from a YAML file if it exists, otherwise return an empty dict.
+
+    :param path: Path to the YAML configuration file (default: "config.yaml").
+    :return: Configuration dictionary loaded from the file, or empty dict if file does not exist or fails to load.
+    """
+
+    if path and verify_filepath_exists(path):  # Verify the path is non-empty and the file exists
+        try:  # Attempt to open and parse the YAML file
+            with open(path, "r", encoding="utf-8") as f:  # Open config file for reading
+                return yaml.safe_load(f) or {}  # Parse YAML safely and fallback to empty dict
+        except Exception:  # Ignore any parse or read errors and return empty dict
+            return {}  # Return empty dict on parse failure
+    return {}  # Return empty dict when file path is missing or file does not exist
+
+
 def parse_cli_args(argv=None) -> dict:
     """
     Parse CLI arguments and return a dictionary of config overrides.
