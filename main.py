@@ -109,6 +109,56 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def save_tsne_3d_plot(X_emb, labels, output_path, title):
+    """
+    Create and save a 3D t-SNE scatter plot.
+
+    If labels are provided, points are colored by class with a legend.
+    Otherwise, all points are plotted uniformly.
+
+    :param X_emb: 3D numpy array of t-SNE embeddings (shape: [n_samples, 3])
+    :param labels: pandas Series of class labels or None
+    :param output_path: absolute path where PNG will be saved
+    :param title: plot title string
+    :return: None
+    """
+
+    fig = None
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        fig = plt.figure(figsize=(10, 8))  # Create matplotlib figure
+        ax = fig.add_subplot(111, projection='3d')  # Create 3D axis
+
+        if labels is not None:  # Plot colored by class
+            labels_ser = pd.Series(labels)  # Ensure labels are a pandas Series
+            counts = labels_ser.value_counts()  # Count samples per class
+            unique = list(labels_ser.unique())  # Unique class labels (preserve order)
+            for cls in unique:  # Plot each class separately
+                mask = labels_ser == cls  # Boolean mask for class
+                cast(Any, ax).scatter(
+                    X_emb[mask, 0],
+                    X_emb[mask, 1],
+                    X_emb[mask, 2],
+                    label=sanitize_plot_text(f"{cls} ({int(counts.get(cls, 0))})"),  # Sanitize class label before passing to matplotlib
+                    s=8,
+                )  # 3D scatter plot for class with count in label
+            ax.legend(markerscale=2, fontsize="small")  # Add legend for classes
+        else:  # No labels provided
+            cast(Any, ax).scatter(X_emb[:, 0], X_emb[:, 1], X_emb[:, 2], s=8)  # Plot all points uniformly
+
+        ax.set_title(sanitize_plot_text(title))  # Set sanitized plot title
+        ax.set_xlabel(sanitize_plot_text("t-SNE 1"))  # X-axis label sanitized
+        ax.set_ylabel(sanitize_plot_text("t-SNE 2"))  # Y-axis label sanitized
+        cast(Any, ax).set_zlabel(sanitize_plot_text("t-SNE 3"))  # Z-axis label sanitized (cast to Any for typing)
+        plt.tight_layout()  # Adjust layout to fit everything within the figure area
+        try:  # Attempt to save the figure and guarantee the figure is closed
+            fig.savefig(output_path, dpi=300)  # Save 3D t-SNE figure to disk at 300 DPI
+        finally:  # Ensure figure is always closed to free memory
+            plt.close(fig)  # Close the figure to free memory
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def generate_and_save_tsne_embeddings(X, labels, base, output_dir, perplexity, n_iter, random_state):
     """
     Compute 2D and 3D t-SNE embeddings for the scaled feature matrix and save both as PNG scatter plots.
