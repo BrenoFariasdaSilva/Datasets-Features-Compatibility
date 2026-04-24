@@ -109,6 +109,30 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def load_tableau_image_config():
+    """
+    Load the configuration file, resolve the table image timeout, and build the base dataframe_image export kwargs.
+
+    :return: Tuple of (timeout_ms, export_kwargs) where timeout_ms is the configured timeout in milliseconds and export_kwargs is a dict pre-populated with the Playwright conversion option and timeout parameters.
+    """
+
+    cfg = load_config_file()  # Load configuration from config.yaml if present in the workspace
+    timeout_ms = int((cfg or {}).get("dataset_descriptor", {}).get("table_image_timeout_ms", 30000))  # Determine timeout in milliseconds using config value with hardcoded fallback
+    src = "config" if (cfg or {}).get("dataset_descriptor", {}).get("table_image_timeout_ms") is not None else "default"  # Identify whether the timeout came from config or the default value
+    print(f"{BackgroundColors.GREEN}[CONFIG] table_image_timeout_ms = {BackgroundColors.CYAN}{timeout_ms}{Style.RESET_ALL} (source: {src})")  # Log the active timeout value and its source with colored terminal output
+    export_kwargs: dict[str, Any] = {"table_conversion": "playwright"}  # Build base export kwargs with Playwright as the conversion engine
+    export_kwargs["timeout"] = timeout_ms  # Inject the configured timeout so Playwright receives the correct value
+    try:  # Inspect dfi.export signature to attach the matching screenshot timeout parameter name
+        params = set(signature(dfi.export).parameters.keys())  # Retrieve the set of parameter names supported by dfi.export
+        for _pname in ("screenshot_timeout", "timeout", "playwright_timeout", "playwright_screenshot_timeout"):  # Iterate candidate timeout parameter names from various dfi versions
+            if _pname in params:  # Verify whether this candidate is present in the detected parameter set
+                export_kwargs[_pname] = timeout_ms  # Attach the timeout using the first matching parameter name
+                break  # Stop after the first supported parameter to avoid conflicting kwargs
+    except Exception:  # Ignore signature inspection failures to preserve original behavior
+        pass  # Continue without explicit screenshot timeout when inspection is unavailable
+    return timeout_ms, export_kwargs  # Return the resolved timeout and fully built export kwargs dict
+
+
 def export_dataframe_image(styled_df, output_path):
     """
     Export a pandas.Styler to a PNG image using dataframe_image.
