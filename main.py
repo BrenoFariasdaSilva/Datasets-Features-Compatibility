@@ -109,6 +109,34 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def apply_zebra_style(df):
+    """
+    Apply zebra-striping pandas Styler to the provided DataFrame.
+
+    :param df: pandas.DataFrame to style
+    :return: pandas.Styler with zebra styling applied
+    """
+
+    try:  # Wrap function body for consistent error handling
+        sanitized_df = df.copy()  # Make a shallow copy to avoid mutating caller DataFrame
+        sanitized_df.columns = [sanitize_plot_text(str(c)) for c in sanitized_df.columns]  # Sanitize all column names to safe UTF-8
+        try:  # Attempt to sanitize index labels when present to avoid glyph issues in table exports
+            sanitized_df.index = sanitized_df.index.map(lambda x: sanitize_plot_text(str(x)) if pd.notnull(x) else x)  # Sanitize index entries
+        except Exception:  # Ignore index sanitization errors to preserve original behavior
+            pass  # Continue even if index mapping fails
+        for col in list(sanitized_df.columns):  # Iterate over a static list of columns to sanitize values
+            try:  # Guard per-column sanitization to avoid failing entire styling pipeline
+                if sanitized_df[col].dtype == object or getattr(pd.api.types, "is_string_dtype", lambda x: False)(sanitized_df[col]):  # Detect string-like columns
+                    sanitized_df[col] = sanitized_df[col].apply(lambda x: sanitize_plot_text(str(x)) if pd.notnull(x) else x)  # Sanitize each cell in string columns
+            except Exception:  # Ignore individual column sanitization errors to preserve original behavior
+                pass  # Continue processing remaining columns even if one fails
+        styled = sanitized_df.style.apply(stripe, axis=1)  # Apply zebra striping across rows on sanitized DataFrame
+        return styled  # Return the styled DataFrame
+    except Exception as e:  # Preserve exception handling style
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise exception to surface failure
+
+
 def upscale_image_if_needed(path, fallback=False):
     """
     This function verifies the dimensions of the image at the given path and upscales it if either dimension is below 4k (3840x2160).
