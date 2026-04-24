@@ -109,6 +109,120 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def collect_preprocessing_metrics(
+    filepath,
+    original_num_rows,
+    rows_after_preprocessing,
+    original_num_features,
+    features_after_preprocessing,
+    rows_after_nan_inf_removal=0,
+    removed_rows_nan_inf=0,
+    removed_rows_nan_inf_proportion=0.0,
+    features_after_zero_variance_removal=0,
+    removed_zero_variance_features=0,
+    removed_zero_variance_features_proportion=0.0,
+    dropped_non_informative_features=0,
+    dropped_non_informative_features_proportion=0.0,
+    features_transformed_for_experiment=0,
+    features_transformed_for_experiment_proportion=0.0,
+    features_cast_to_float64_int64=0,
+    features_encoded_categorical=0,
+    preprocessing_step_metrics=None,
+):
+    """
+    Collect preprocessing metrics for a single file and return a dict matching the required CSV schema.
+
+    :param filepath: Path to the processed CSV file
+    :param original_num_rows: Number of rows immediately after reading the CSV
+    :param rows_after_preprocessing: Number of rows after preprocessing steps
+    :param original_num_features: Number of features before preprocessing
+    :param features_after_preprocessing: Number of features after preprocessing
+    :param rows_after_nan_inf_removal: Number of rows remaining after removing NaN and infinite rows.
+    :param removed_rows_nan_inf: Number of rows removed by NaN/infinite filtering.
+    :param removed_rows_nan_inf_proportion: Proportion of rows removed by NaN/infinite filtering.
+    :param features_after_zero_variance_removal: Number of features remaining after zero-variance removal.
+    :param removed_zero_variance_features: Number of zero-variance numerical features removed.
+    :param removed_zero_variance_features_proportion: Proportion of zero-variance numerical features removed.
+    :param dropped_non_informative_features: Number of non-informative identifier/metadata features dropped.
+    :param dropped_non_informative_features_proportion: Proportion of non-informative identifier/metadata features dropped.
+    :param features_transformed_for_experiment: Number of features transformed for experiment encoding/casting.
+    :param features_transformed_for_experiment_proportion: Proportion of features transformed for experiment encoding/casting.
+    :param features_cast_to_float64_int64: Number of numeric features that require casting to float64/int64.
+    :param features_encoded_categorical: Number of categorical features that require ordinal/one-hot encoding.
+    :return: Dict with keys matching preprocessing_summary.csv columns.
+    """
+
+    try:  # Wrap logic to preserve existing error handling conventions
+        filename = os.path.basename(filepath)  # Extract filename from filepath
+        original_num_rows = int(original_num_rows) if original_num_rows is not None else 0  # Normalize original row count to integer
+        rows_after_preprocessing = int(rows_after_preprocessing) if rows_after_preprocessing is not None else 0  # Normalize final row count to integer
+        original_num_features = int(original_num_features) if original_num_features is not None else 0  # Normalize original feature count to integer
+        features_after_preprocessing = int(features_after_preprocessing) if features_after_preprocessing is not None else 0  # Normalize final feature count to integer
+        step_metrics = preprocessing_step_metrics if isinstance(preprocessing_step_metrics, dict) else {}  # Resolve optional structured per-step metrics container
+        nan_inf_metrics = step_metrics.get("nan_inf", {}) if isinstance(step_metrics.get("nan_inf", {}), dict) else {}  # Resolve NaN+infinite step metrics from structured container
+        zero_variance_metrics = step_metrics.get("zero_variance", {}) if isinstance(step_metrics.get("zero_variance", {}), dict) else {}  # Resolve zero-variance step metrics from structured container
+        final_metrics = step_metrics.get("final", {}) if isinstance(step_metrics.get("final", {}), dict) else {}  # Resolve final aggregated metrics from structured container
+
+        rows_after_nan_inf_value = nan_inf_metrics.get("rows_after_step", rows_after_nan_inf_removal)  # Resolve rows after NaN+infinite filtering from step metrics with fallback
+        rows_after_nan_inf_value = int(rows_after_nan_inf_value) if rows_after_nan_inf_value is not None else 0  # Normalize rows after NaN+infinite filtering to integer
+        removed_rows_nan_inf_value = nan_inf_metrics.get("removed_rows_step", removed_rows_nan_inf)  # Resolve removed rows for NaN+infinite filtering from step metrics with fallback
+        removed_rows_nan_inf_value = int(removed_rows_nan_inf_value) if removed_rows_nan_inf_value is not None else 0  # Normalize removed rows for NaN+infinite filtering to integer
+        removed_rows_nan_inf_value = removed_rows_nan_inf_value if removed_rows_nan_inf_value >= 0 else 0  # Clamp negative removed rows for NaN+infinite filtering to zero
+        removed_rows_nan_inf_proportion_value = nan_inf_metrics.get("removed_rows_step_proportion", removed_rows_nan_inf_proportion)  # Resolve NaN+infinite removed-row proportion from step metrics with fallback
+        removed_rows_nan_inf_proportion_value = round(float(removed_rows_nan_inf_proportion_value), 6) if removed_rows_nan_inf_proportion_value is not None else 0.0  # Normalize NaN+infinite removed-row proportion
+
+        features_after_zero_variance_value = zero_variance_metrics.get("features_after_step", features_after_zero_variance_removal)  # Resolve features after zero-variance removal from step metrics with fallback
+        features_after_zero_variance_value = int(features_after_zero_variance_value) if features_after_zero_variance_value is not None else 0  # Normalize features after zero-variance removal to integer
+        removed_zero_variance_features_value = zero_variance_metrics.get("removed_features_step", removed_zero_variance_features)  # Resolve removed zero-variance features from step metrics with fallback
+        removed_zero_variance_features_value = int(removed_zero_variance_features_value) if removed_zero_variance_features_value is not None else 0  # Normalize removed zero-variance features to integer
+        removed_zero_variance_features_value = removed_zero_variance_features_value if removed_zero_variance_features_value >= 0 else 0  # Clamp negative removed zero-variance features to zero
+        removed_zero_variance_features_proportion_value = zero_variance_metrics.get("removed_features_step_proportion", removed_zero_variance_features_proportion)  # Resolve zero-variance removed-feature proportion from step metrics with fallback
+        removed_zero_variance_features_proportion_value = round(float(removed_zero_variance_features_proportion_value), 6) if removed_zero_variance_features_proportion_value is not None else 0.0  # Normalize zero-variance removed-feature proportion
+
+        removed_rows = final_metrics.get("removed_rows_step", original_num_rows - rows_after_preprocessing)  # Resolve total removed rows from final step metrics with fallback
+        removed_rows = int(removed_rows) if removed_rows is not None else 0  # Normalize total removed rows to integer
+        removed_rows = removed_rows if removed_rows >= 0 else 0  # Clamp negative total removed rows to zero for safety
+        if original_num_rows > 0:  # Guard division by zero for total removed-row proportion
+            removed_rows_proportion = round(float(removed_rows) / float(original_num_rows), 6)  # Compute total removed-row proportion from normalized values
+        else:  # Handle zero-row datasets without division
+            removed_rows_proportion = 0.0  # Set total removed-row proportion to zero when no rows are present
+
+        removed_features = original_num_features - features_after_preprocessing  # Compute total removed features count
+        removed_features = int(removed_features) if removed_features is not None else 0  # Normalize total removed features to integer
+        removed_features = removed_features if removed_features >= 0 else 0  # Clamp negative total removed features to zero for safety
+        if original_num_features > 0:  # Guard division by zero for total removed-feature proportion
+            removed_features_proportion = round(float(removed_features) / float(original_num_features), 6)  # Compute total removed-feature proportion from normalized values
+        else:  # Handle zero-feature datasets without division
+            removed_features_proportion = 0.0  # Set total removed-feature proportion to zero when no features are present
+
+        return {  # Return metrics dict matching required output columns and order
+            "filename": filename,  # Base filename
+            "original_num_rows": int(original_num_rows),  # Cast to int for CSV
+            "rows_after_nan_inf_removal": int(rows_after_nan_inf_value),  # Persist rows after NaN+infinite filtering only
+            "removed_rows_nan_inf": int(removed_rows_nan_inf_value),  # Persist removed rows from NaN+infinite filtering only
+            "removed_rows_nan_inf_proportion": float(removed_rows_nan_inf_proportion_value),  # Persist removed-row proportion from NaN+infinite filtering only
+            "rows_after_preprocessing": int(rows_after_preprocessing),  # Cast to int
+            "removed_rows": int(removed_rows),  # Cast to int
+            "removed_rows_proportion": float(removed_rows_proportion),  # Float rounded to 6 decimals
+            "original_num_features": int(original_num_features),  # Cast to int
+            "features_after_zero_variance_removal": int(features_after_zero_variance_value),  # Persist features after zero-variance filtering only
+            "removed_zero_variance_features": int(removed_zero_variance_features_value),  # Persist removed zero-variance features only
+            "removed_zero_variance_features_proportion": float(removed_zero_variance_features_proportion_value),  # Persist removed-feature proportion from zero-variance filtering only
+            "features_after_preprocessing": int(features_after_preprocessing),  # Cast to int
+            "removed_features": int(removed_features),  # Cast to int
+            "removed_features_proportion": float(removed_features_proportion),  # Float rounded to 6 decimals
+            "dropped_non_informative_features": int(dropped_non_informative_features),  # Cast to int for CSV
+            "dropped_non_informative_features_proportion": float(dropped_non_informative_features_proportion),  # Float rounded to 6 decimals
+            "features_transformed_for_experiment": int(features_transformed_for_experiment),  # Cast to int for CSV
+            "features_transformed_for_experiment_proportion": float(features_transformed_for_experiment_proportion),  # Float rounded to 6 decimals
+            "features_cast_to_float64_int64": int(features_cast_to_float64_int64),  # Cast to int for CSV
+            "features_encoded_categorical": int(features_encoded_categorical),  # Cast to int for CSV
+        }  # End dict
+    except Exception as e:  # Preserve exception handling style
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def build_preprocessing_summary_dataframe(metrics_list):
     """
     Build a DataFrame for preprocessing summary from a list of metrics dicts.
