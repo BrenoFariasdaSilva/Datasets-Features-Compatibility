@@ -109,6 +109,23 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def generate_table_image_from_dataframe(df, output_path, config: dict | None = None):
+    """
+    Generate a zebra-striped PNG table image from a DataFrame and save to output_path.
+
+    :param df: pandas.DataFrame to render.
+    :param output_path: Path for output PNG image.
+    :param config: Optional configuration dictionary (reserved for future use).
+    :return: None.
+    """
+
+    try:  # Wrap to preserve module's error handling conventions
+        styled = apply_zebra_style(df)  # Create a styled DataFrame with zebra striping
+        export_dataframe_image(styled, output_path)  # Export the styled DataFrame to PNG
+    except Exception:  # Do not swallow exceptions here per spec
+        raise  # Re-raise any exception to caller
+
+
 def generate_csv_and_image(df, csv_path, config: dict | None = None):
     """
     Save a DataFrame to CSV and generate a corresponding PNG table image next to it.
