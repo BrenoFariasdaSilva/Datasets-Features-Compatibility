@@ -109,6 +109,74 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def save_tsne_plot(X_emb, labels, output_path, title):
+    """
+    Create and save a 2D t-SNE scatter plot.
+
+    If labels are provided, points are colored by class with a legend.
+    Otherwise, all points are plotted uniformly.
+
+    :param X_emb: 2D numpy array of t-SNE embeddings (shape: [n_samples, 2])
+    :param labels: pandas Series of class labels or None
+    :param output_path: absolute path where PNG will be saved
+    :param title: plot title string
+    :return: None
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        target_width_px = 3840  # Desired width in pixels for the output image (e.g., 3840 for 4K UHD)
+        target_height_px = 2160  # Desired height in pixels for the output image (e.g., 2160 for 4K UHD)
+        dpi_given = 1000  # High DPI to ensure the output image has the desired pixel dimensions when saved
+
+        figsize = (target_width_px / float(dpi_given), target_height_px / float(dpi_given))  # Calculate figure size in inches to achieve target pixel dimensions at the given DPI
+        fig = plt.figure(figsize=figsize)  # Create matplotlib figure (DPI preserved by savefig)
+
+        try:  # Try plotting and saving to ensure figure is closed even if an error occurs
+            if labels is not None:  # Plot colored by class
+                labels_ser = pd.Series(labels)  # Ensure labels are a pandas Series
+                counts = labels_ser.value_counts()  # Count samples per class
+                unique = list(labels_ser.unique())  # Unique class labels (preserve order)
+                for cls in unique:  # Plot each class separately
+                    mask = labels_ser == cls  # Boolean mask for class
+                    plt.scatter(X_emb[mask, 0], X_emb[mask, 1], label=sanitize_plot_text(f"{cls} ({int(counts.get(cls, 0))})"), s=8)  # Scatter plot for class with sanitized count label
+                plt.legend(markerscale=2, fontsize="small")  # Add legend for classes
+                try:  # Try to add counts text box
+                    counts_text = "\n".join([f"{str(c)}: {int(counts[c])}" for c in counts.index])  # Prepare counts text
+                    counts_text = sanitize_plot_text(counts_text)  # Sanitize counts text before rendering
+                    fig.text(
+                        0.99,
+                        0.01,
+                        counts_text,
+                        ha="right",
+                        va="bottom",
+                        fontsize=8,
+                        bbox=dict(facecolor="white", alpha=0.6, edgecolor="none"),
+                    )  # Add text box with counts
+                except Exception:  # Ignore any errors in adding counts text
+                    pass  # Do nothing
+            else:  # No labels provided
+                plt.scatter(X_emb[:, 0], X_emb[:, 1], s=8)  # Plot all points uniformly
+
+            title = sanitize_plot_text(title)  # Sanitize incoming title before plotting
+            plt.title(title)  # Set plot title
+            plt.xlabel(sanitize_plot_text("t-SNE 1"))  # X-axis label sanitized
+            plt.ylabel(sanitize_plot_text("t-SNE 2"))  # Y-axis label sanitized
+            plt.tight_layout()  # Adjust layout
+            try:  # Try saving the figure
+                fig.savefig(output_path, dpi=300)  # Save figure to disk
+            finally:  # Ensure the figure is closed to free memory
+                plt.close(fig)  # Close the figure to free memory
+        except Exception as e:  # Catch any exception during plotting or saving to ensure the figure is closed
+            try:  # Attempt to close the figure if an error occurs during plotting/saving
+                plt.close(fig)  # Close the figure to free memory
+            except Exception:  # Ignore any exceptions that occur while trying to close the figure
+                pass  # Do nothing if closing the figure fails
+            raise  # Re-raise the original exception to be caught by the outer block for logging and Telegram alert
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def save_tsne_3d_plot(X_emb, labels, output_path, title):
     """
     Create and save a 3D t-SNE scatter plot.
