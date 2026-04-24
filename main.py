@@ -109,6 +109,24 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def resolve_output_filename(output_filename, cfg):
+    """
+    Resolve the output filename for the dataset report CSV, applying config defaults and ensuring a .csv extension.
+
+    :param output_filename: Caller-provided filename string, or None to use a config-derived default.
+    :param cfg: Configuration dictionary used to read the csv_output_suffix fallback value.
+    :return: Resolved output filename string guaranteed to end with ".csv".
+    """
+
+    if output_filename is None:  # Use config-based suffix when no filename was provided by the caller
+        output_filename = cfg.get("dataset_descriptor", {}).get("csv_output_suffix", "description")  # Read configured suffix with hardcoded fallback
+    if not isinstance(output_filename, str):  # Convert non-string filename to string using config suffix as fallback
+        output_filename = str(output_filename or cfg.get("dataset_descriptor", {}).get("csv_output_suffix", "_description"))  # Stringify with config fallback when value is falsy
+    if not output_filename.lower().endswith(".csv"):  # Append .csv extension when absent
+        output_filename = f"{output_filename}.csv"  # Ensure the filename always has the .csv extension
+    return output_filename  # Return the fully resolved output filename
+
+
 def collect_report_input_files(input_path, file_extension, config):
     """
     Determine the matching files and base directory from the provided input path.
