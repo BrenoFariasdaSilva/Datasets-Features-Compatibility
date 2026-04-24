@@ -109,6 +109,111 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def preprocess_dataframe(df, remove_zero_variance=True):
+    """
+    Preprocess a DataFrame by removing rows with NaN or infinite values and
+    dropping zero-variance numeric features.
+
+    :param df: pandas DataFrame to preprocess
+    :param remove_zero_variance: whether to drop numeric columns with zero variance
+    :return: cleaned DataFrame
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        if remove_zero_variance:  # If remove_zero_variance is set to True
+            verbose_output(
+                f"{BackgroundColors.GREEN}Preprocessing DataFrame: "  # Verify intent message
+                f"{BackgroundColors.CYAN}normalizing and sanitizing column names, removing NaN rows, removing infinite rows, and dropping zero-variance numeric features"
+                f"{BackgroundColors.GREEN}.{Style.RESET_ALL}"
+            )  # Emit verbose message when zero-variance removal is requested
+        else:  # If remove_zero_variance is set to False
+            verbose_output(
+                f"{BackgroundColors.GREEN}Preprocessing DataFrame: "  # Verify intent message
+                f"{BackgroundColors.CYAN}normalizing and sanitizing column names, removing NaN rows, and removing infinite rows"
+                f"{BackgroundColors.GREEN}.{Style.RESET_ALL}"
+            )  # Emit verbose message when zero-variance removal is not requested
+
+        if df is None:  # If the DataFrame is None
+            return df  # Return None when no DataFrame provided
+
+        df.columns = df.columns.str.strip()  # Remove leading/trailing whitespace from column names
+
+        df.columns = sanitize_feature_names(df.columns)  # Sanitize column names to remove special characters
+
+        original_row_count = int(len(df))  # Record original row count for metric computations
+        original_feature_count = int(df.shape[1]) if hasattr(df, "shape") else 0  # Record original feature count for metric computations
+        preprocessing_metrics = {"nan_removal": {}, "infinite_removal": {}, "nan_inf": {}, "zero_variance": {}, "final": {}}  # Initialize structured per-step metrics container
+
+        rows_before_nan_removal = int(len(df))  # Capture row count before NaN/null filtering step
+        missing_mask = df.isna().any(axis=1)  # Identify rows that contain any NaN/null values
+        df_no_nan = df.loc[~missing_mask]  # Remove rows that contain NaN/null values
+        rows_after_nan_removal = int(len(df_no_nan))  # Capture row count after NaN/null filtering step
+        removed_rows_nan = int(rows_before_nan_removal - rows_after_nan_removal)  # Compute rows removed by NaN/null filtering step
+        if rows_before_nan_removal > 0:  # Guard division by zero for NaN/null removed-row proportion
+            removed_rows_nan_proportion = round(float(removed_rows_nan) / float(rows_before_nan_removal), 6)  # Compute NaN/null removed-row proportion
+        else:  # Handle empty datasets before NaN/null filtering
+            removed_rows_nan_proportion = 0.0  # Set NaN/null removed-row proportion to zero
+        preprocessing_metrics["nan_removal"] = {"rows_before_step": rows_before_nan_removal, "rows_after_step": rows_after_nan_removal, "removed_rows_step": removed_rows_nan, "removed_rows_step_proportion": removed_rows_nan_proportion}  # Store isolated NaN/null step metrics
+
+        rows_before_inf_removal = int(len(df_no_nan))  # Capture row count before infinite-value filtering step
+        numeric_cols = df_no_nan.select_dtypes(include=["number"]).columns  # Identify numeric columns to detect infinite values
+        if len(numeric_cols) > 0:  # Only compute infinite masks when numeric columns exist
+            inf_mask = df_no_nan[numeric_cols].isin([np.inf, -np.inf]).any(axis=1)  # Identify rows with any +/-inf in numeric columns
+        else:  # When no numeric columns exist
+            inf_mask = pd.Series([False] * len(df_no_nan), index=df_no_nan.index)  # Create false mask to avoid errors
+        df_no_inf = df_no_nan.loc[~inf_mask]  # Remove rows that contain infinite values in numeric columns
+        rows_after_inf_removal = int(len(df_no_inf))  # Capture row count after infinite-value filtering step
+        removed_rows_inf = int(rows_before_inf_removal - rows_after_inf_removal)  # Compute rows removed by infinite-value filtering step
+        if rows_before_inf_removal > 0:  # Guard division by zero for infinite-value removed-row proportion
+            removed_rows_inf_proportion = round(float(removed_rows_inf) / float(rows_before_inf_removal), 6)  # Compute infinite-value removed-row proportion
+        else:  # Handle empty datasets before infinite-value filtering
+            removed_rows_inf_proportion = 0.0  # Set infinite-value removed-row proportion to zero
+        preprocessing_metrics["infinite_removal"] = {"rows_before_step": rows_before_inf_removal, "rows_after_step": rows_after_inf_removal, "removed_rows_step": removed_rows_inf, "removed_rows_step_proportion": removed_rows_inf_proportion}  # Store isolated infinite-value step metrics
+
+        removed_rows_nan_inf = int(original_row_count - rows_after_inf_removal)  # Compute rows removed by NaN+infinite filtering sequence
+        if original_row_count > 0:  # Guard division by zero for NaN+infinite removed-row proportion
+            removed_rows_nan_inf_proportion = round(float(removed_rows_nan_inf) / float(original_row_count), 6)  # Compute NaN+infinite removed-row proportion
+        else:  # Handle empty original datasets
+            removed_rows_nan_inf_proportion = 0.0  # Set NaN+infinite removed-row proportion to zero
+        preprocessing_metrics["nan_inf"] = {"rows_before_step": original_row_count, "rows_after_step": rows_after_inf_removal, "removed_rows_step": removed_rows_nan_inf, "removed_rows_step_proportion": removed_rows_nan_inf_proportion}  # Store aggregated NaN+infinite step metrics
+
+        df_clean = df_no_inf.replace([np.nan], np.nan)  # Ensure canonical NaN representation after removal steps
+        features_before_zero_variance = int(df_clean.shape[1]) if hasattr(df_clean, "shape") else 0  # Capture feature count before zero-variance removal
+        features_after_zero_variance = features_before_zero_variance  # Initialize feature count after zero-variance removal
+        removed_zero_variance_features = 0  # Initialize removed zero-variance feature counter
+
+        if remove_zero_variance:  # If zero-variance removal is requested
+            numeric_cols_post = df_clean.select_dtypes(include=["number"]).columns  # Identify numeric columns for variance computation
+            if len(numeric_cols_post) > 0:  # Only compute variances when numeric columns exist
+                variances = df_clean[numeric_cols_post].var(axis=0, ddof=0)  # Calculate variances for numeric columns
+                zero_var_cols = variances[variances == 0].index.tolist()  # Collect column names with zero variance
+                if zero_var_cols:  # If there are zero-variance columns found
+                    df_clean = df_clean.drop(columns=zero_var_cols)  # Drop the zero-variance columns from DataFrame
+        features_after_zero_variance = int(df_clean.shape[1]) if hasattr(df_clean, "shape") else 0  # Capture feature count after zero-variance removal step
+        removed_zero_variance_features = int(features_before_zero_variance - features_after_zero_variance)  # Compute removed zero-variance feature count
+        removed_zero_variance_features = removed_zero_variance_features if removed_zero_variance_features >= 0 else 0  # Clamp negative removed feature count to zero
+        if features_before_zero_variance > 0:  # Guard division by zero for zero-variance removed-feature proportion
+            removed_zero_variance_features_proportion = round(float(removed_zero_variance_features) / float(features_before_zero_variance), 6)  # Compute zero-variance removed-feature proportion
+        else:  # Handle empty feature spaces before zero-variance removal
+            removed_zero_variance_features_proportion = 0.0  # Set zero-variance removed-feature proportion to zero
+        preprocessing_metrics["zero_variance"] = {"features_before_step": features_before_zero_variance, "features_after_step": features_after_zero_variance, "removed_features_step": removed_zero_variance_features, "removed_features_step_proportion": removed_zero_variance_features_proportion}  # Store isolated zero-variance feature step metrics
+
+        rows_after_preprocessing = int(len(df_clean))  # Capture final row count after preprocessing pipeline
+        removed_rows_total = int(original_row_count - rows_after_preprocessing)  # Compute total removed rows across preprocessing pipeline
+        removed_rows_total = removed_rows_total if removed_rows_total >= 0 else 0  # Clamp negative total removed rows to zero
+        if original_row_count > 0:  # Guard division by zero for total removed-row proportion
+            removed_rows_total_proportion = round(float(removed_rows_total) / float(original_row_count), 6)  # Compute total removed-row proportion
+        else:  # Handle empty original datasets
+            removed_rows_total_proportion = 0.0  # Set total removed-row proportion to zero
+        preprocessing_metrics["final"] = {"rows_before_step": original_row_count, "rows_after_step": rows_after_preprocessing, "removed_rows_step": removed_rows_total, "removed_rows_step_proportion": removed_rows_total_proportion, "features_before_step": original_feature_count, "features_after_step": int(df_clean.shape[1]) if hasattr(df_clean, "shape") else 0}  # Store final aggregated preprocessing metrics
+        df_clean.attrs["preprocessing_metrics"] = preprocessing_metrics  # Attach structured preprocessing metrics to DataFrame metadata
+
+        return df_clean  # Return the cleaned DataFrame after sequential preprocessing
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def detect_label_column(columns):
     """
     Try to guess the label column based on common naming conventions.
