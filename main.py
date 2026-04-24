@@ -109,6 +109,44 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def play_sound():
+    """
+    Play a sound when the program finishes and skip if the operating system is Windows.
+
+    :return: None.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        cfg = {}
+        try:
+            cfg = get_config() or {}
+        except Exception:
+            cfg = {}
+
+        sound_cfg = cfg.get("sound", {}) if isinstance(cfg, dict) else {}
+        sound_file = sound_cfg.get("file", SOUND_FILE)
+        sound_cmds = sound_cfg.get("commands", SOUND_COMMANDS)
+
+        current_os = platform.system()  # Get the current operating system
+        if current_os == "Windows":  # If the current operating system is Windows
+            return  # Do nothing on Windows by default
+
+        if verify_filepath_exists(sound_file):  # If the sound file exists
+            if current_os in sound_cmds:  # Use commands from config or defaults
+                os.system(f"{sound_cmds[current_os]} {sound_file}")  # Play the sound
+            else:  # Unknown OS mapping
+                print(
+                    f"{BackgroundColors.RED}The {BackgroundColors.CYAN}{current_os}{BackgroundColors.RED} is not configured in sound.commands. Please add it!{Style.RESET_ALL}"
+                )
+        else:  # If the sound file does not exist
+            print(
+                f"{BackgroundColors.RED}Sound file {BackgroundColors.CYAN}{sound_file}{BackgroundColors.RED} not found. Make sure the file exists or set 'sound.file' in config.yaml.{Style.RESET_ALL}"
+            )
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def main():
     """
     Main function.
