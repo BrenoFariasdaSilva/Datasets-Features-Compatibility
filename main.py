@@ -109,6 +109,45 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def downsample_with_class_awareness(numeric_df, labels, sample_size, random_state):
+    """
+    Downsample dataset while preserving class distribution and ensuring
+    small classes (< 50 samples) are fully represented.
+
+    Falls back to random sampling if class-aware sampling fails or labels
+    are unavailable.
+
+    :param numeric_df: DataFrame containing numeric features
+    :param labels: pandas Series with class labels (or None)
+    :param sample_size: target number of samples after downsampling
+    :param random_state: seed for reproducible sampling
+    :return: tuple (downsampled numeric_df, downsampled labels or None)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        if labels is None:  # No labels available -> random sampling
+            return numeric_df.sample(n=sample_size, random_state=random_state), None  # Return random sample and no labels
+
+        try:  # Try class-aware downsampling
+            allocations = compute_class_aware_allocations(
+                labels, sample_size, min_class_size=50
+            )  # Compute per-class allocations
+            selected_idx = sample_by_class_allocation(labels, allocations, random_state)  # Sample indices per allocations
+
+            if not selected_idx:  # If selection failed or empty
+                return numeric_df.sample(n=sample_size, random_state=random_state), None  # Fallback to random sampling
+
+            return (
+                numeric_df.loc[selected_idx].reset_index(drop=True),
+                labels.loc[selected_idx].reset_index(drop=True),
+            )  # Return downsampled DataFrame and labels
+        except Exception:  # On any error, fallback to random sampling
+            return numeric_df.sample(n=sample_size, random_state=random_state), None  # Return random sample and no labels
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def initialize_and_fit_tsne(X, n_components=2, perplexity=30, n_iter=1000, random_state=42):
     """
     Initialize t-SNE with proper parameters and compute 2D or 3D embedding.
