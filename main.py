@@ -109,6 +109,45 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def attempt_matplotlib_export_fallback(styled_df, output_path, e_inner):
+    """
+    Attempt to export a styled DataFrame to PNG using pure matplotlib table rendering as a last-resort fallback.
+
+    :param styled_df: pandas.Styler or DataFrame object to render as a table image.
+    :param output_path: File system path where the rendered PNG will be written.
+    :param e_inner: Exception from the previous fallback attempt, or None when a prior method succeeded.
+    :return: None when export succeeded, or the last encountered exception when matplotlib rendering also failed.
+    """
+
+    if e_inner is None:  # Skip matplotlib fallback when a prior method already succeeded
+        return None  # Prior method succeeded; no further fallback is needed
+    try:  # Attempt pure matplotlib table rendering as the final deterministic fallback
+        try:  # Extract the underlying DataFrame from the Styler when possible
+            df_to_render = getattr(styled_df, "data", styled_df)  # Access the raw DataFrame from a Styler or use the object as-is
+        except Exception:  # Fall back to using styled_df directly when attribute access fails
+            df_to_render = styled_df  # Use the original styled_df when data extraction is unavailable
+        fig = plt.figure(figsize=(12, 8))  # Create a matplotlib figure sized for a readable table layout
+        ax = fig.add_subplot(111)  # Add a single subplot to host the table
+        ax.axis("off")  # Disable axes to produce a table-only image without borders or ticks
+        try:  # Build the table from DataFrame values and column labels directly
+            table = ax.table(cellText=list(df_to_render.values), colLabels=list(df_to_render.columns), loc='center')  # Construct the matplotlib table from the DataFrame
+        except Exception:  # Fall back to stringified values when direct construction fails
+            table = ax.table(cellText=[[str(x) for x in row] for row in df_to_render.values], colLabels=[str(c) for c in df_to_render.columns], loc='center')  # Build table with all values converted to strings
+        table.auto_set_font_size(False)  # Disable automatic font sizing for consistent appearance
+        table.set_fontsize(6)  # Set a small font size to fit large tables within the figure bounds
+        fig.tight_layout()  # Adjust the layout to fit the table within the figure area
+        fig.savefig(output_path, dpi=300)  # Save the rendered table to disk at 300 DPI
+        plt.close(fig)  # Close the figure immediately after saving to free memory
+        if verify_filepath_exists(output_path):  # Verify the output file was actually created on disk
+            print(f"{BackgroundColors.GREEN}[DEBUG] Exported image (matplotlib fallback): {BackgroundColors.CYAN}{output_path}{Style.RESET_ALL}")  # Log matplotlib fallback success
+            print(f"{BackgroundColors.GREEN}[INFO] Table image successfully saved to: {BackgroundColors.CYAN}{os.path.abspath(output_path)}{Style.RESET_ALL}")  # Log the absolute save path
+            return None  # Return None to signal matplotlib export succeeded
+        else:  # File not present after the save attempt indicates a silent failure
+            return RuntimeError("Matplotlib fallback failed to produce output file")  # Return explicit error for caller to raise
+    except Exception as _e_matplot:  # Capture any exception during matplotlib rendering for final re-raise
+        return _e_matplot  # Return exception to allow the caller to perform final error handling
+
+
 def attempt_chrome_export_fallback(styled_df, output_path, e_inner, export_kwargs, timeout_ms):
     """
     Attempt to export a styled DataFrame to PNG using Chrome as the table conversion engine.
