@@ -109,6 +109,50 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def export_dataframe_image(styled_df, output_path):
+    """
+    Export a pandas.Styler to a PNG image using dataframe_image.
+
+    :param styled_df: pandas.Styler object to export
+    :param output_path: Path to write PNG image
+    :return: None
+    """
+
+    try:  # Wrap to ensure exceptions are handled and module logging conventions are preserved
+        timeout_ms, export_kwargs = load_tableau_image_config()  # Load config, resolve the table image timeout, and build Playwright export kwargs
+
+        e_inner = attempt_playwright_export_with_retry(styled_df, output_path, export_kwargs, timeout_ms)  # Attempt export with bounded Playwright retries and return last exception or None on success
+
+        if e_inner is not None:  # If last Playwright/dfi attempt failed and no success occurred
+            e_inner = attempt_chrome_export_fallback(styled_df, output_path, e_inner, export_kwargs, timeout_ms)  # Try Chrome as first deterministic fallback and update e_inner
+
+        if e_inner is not None:  # If both Playwright and chrome fallbacks failed, attempt matplotlib rendering as last resort
+            e_inner = attempt_matplotlib_export_fallback(styled_df, output_path, e_inner)  # Try matplotlib as final fallback and update e_inner
+
+        if e_inner is not None:  # If all methods failed, re-raise the last encountered exception to be handled by outer block
+            raise e_inner  # Re-raise last exception to preserve original outer logging and telemetry behavior
+    except Exception as e:  # If export fails, log warning and continue without crashing
+        try:  # Try to import Playwright-specific TimeoutError for precise detection
+            from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError  # Optional import of Playwright TimeoutError for specific handling
+        except Exception:  # If import fails, ensure variable is defined for downstream verification logic
+            PlaywrightTimeoutError = None  # Set to None when Playwright TimeoutError cannot be imported
+        if PlaywrightTimeoutError is not None and isinstance(e, PlaywrightTimeoutError):  # Verify if exception is Playwright TimeoutError
+            print(f"{BackgroundColors.YELLOW}[WARNING] Playwright screenshot timeout while exporting {BackgroundColors.CYAN}{output_path}{BackgroundColors.YELLOW}: {e}{Style.RESET_ALL}")  # Warn when Playwright timeout occurs with colored output
+        else:  # General failure when not a Playwright TimeoutError
+            print(f"{BackgroundColors.YELLOW}[WARNING] Failed to export image {BackgroundColors.CYAN}{output_path}{BackgroundColors.YELLOW}: {e}{Style.RESET_ALL}")  # Warn for general export failures with colored output
+        return  # Return gracefully to avoid terminating the program
+    finally:  # Ensure multiprocessing and large object cleanup regardless of export outcome
+        try:  # Attempt explicit multiprocessing resource finalization to avoid leaked semaphores
+            finalize_multiprocessing_resources()  # Finalize active child processes and resource tracker state
+        except Exception:  # Ignore cleanup failures to preserve non-fatal export semantics
+            pass  # Continue gracefully when finalization fails
+        try:  # Attempt to release styled object reference as soon as export flow ends
+            del styled_df  # Delete styled DataFrame reference to reduce retained memory
+        except Exception:  # Ignore delete failures to preserve behavior
+            pass  # Continue gracefully when reference deletion fails
+        gc.collect()  # Trigger garbage collection after export cleanup
+
+
 def generate_table_image_from_dataframe(df, output_path, config: dict | None = None):
     """
     Generate a zebra-striped PNG table image from a DataFrame and save to output_path.
