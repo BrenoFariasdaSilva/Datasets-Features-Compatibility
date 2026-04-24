@@ -109,6 +109,91 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def generate_tsne_plot(
+    filepath,
+    df=None,
+    low_memory=None,
+    sample_size=5000,
+    perplexity=30,
+    n_iter=1000,
+    random_state=42,
+    output_dir=None,
+    config: dict | None = None,
+):
+    """
+    Generate and save both 2D and 3D t-SNE visualizations of a CSV dataset.
+
+    This function loads a dataset, extracts numeric features, performs class-aware
+    downsampling (if needed), computes 2D and 3D t-SNE embeddings, and saves both
+    as PNG scatter plots with per-class coloring (if labels are detected).
+
+    Downsampling strategy:
+    - Classes with < 50 samples: all samples included
+    - Larger classes: sampled proportionally to preserve distribution
+    - Falls back to random sampling if class detection fails
+
+    :param filepath: path to CSV file
+    :param low_memory: whether to use low-memory mode when loading CSV
+    :param sample_size: maximum number of rows to embed (reduces computation time)
+    :param perplexity: t-SNE perplexity parameter (typically 5-50)
+    :param n_iter: number of t-SNE optimization iterations
+    :param random_state: random seed for reproducible results
+    :param output_dir: directory for saving PNGs (defaults to dataset's RESULTS_DIR)
+    :return: tuple of (2D_filename, 3D_filename) or (None, None) on failure
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Generating t-SNE plots (2D and 3D) for: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}"
+        )  # Output start message for t-SNE generation
+
+        try:  # Main try-catch block for overall failure handling
+            if df is not None:  # Verify whether a pre-loaded DataFrame was provided by the caller
+                numeric_df, labels = prepare_numeric_dataset_from_df(
+                    df, sample_size=sample_size, random_state=random_state
+                )  # Prepare numeric DataFrame from the pre-loaded dataset
+            else:  # No pre-loaded DataFrame, load from file path
+                numeric_df, labels = prepare_numeric_dataset(
+                    filepath, low_memory, sample_size, random_state
+                )  # Prepare numeric dataset from disk
+            if numeric_df is None:  # Abort if preparation failed
+                return None, None  # Indicate failure
+
+            X = scale_features(numeric_df)  # Scale features for t-SNE
+
+            n_rows = X.shape[0]  # Number of rows after downsampling
+            if n_rows <= max(3, int(perplexity) + 1):  # Verifies t-SNE feasibility
+                return None, None  # Abort if too few samples for t-SNE
+
+            output_dir = resolve_tsne_output_directory(filepath, output_dir, config)  # Resolve output directory from explicit path or config and create it
+
+            base = os.path.splitext(os.path.basename(filepath))[0]  # Base filename
+            
+            out_name_2d, out_name_3d = generate_and_save_tsne_embeddings(X, labels, base, output_dir, perplexity, n_iter, random_state)  # Compute and save 2D and 3D t-SNE embeddings as PNG plots
+
+            try:  # Try to delete DataFrame to free memory
+                del numeric_df  # Free numeric DataFrame
+            except Exception:  # Ignore any exceptions during deletion
+                pass  # Do nothing
+            try:  # Try to delete labels object to free memory
+                del labels  # Free labels series/object
+            except Exception:  # Ignore any exceptions during deletion
+                pass  # Do nothing
+            try:  # Try to delete scaled matrix to free memory
+                del X  # Free scaled feature matrix
+            except Exception:  # Ignore any exceptions during deletion
+                pass  # Do nothing
+            gc.collect()  # Force garbage collection
+
+            return out_name_2d, out_name_3d  # Return both saved filenames
+        except Exception as e:  # Catch-all failure
+            print(f"{BackgroundColors.RED}t-SNE generation failed for {filepath}: {e}{Style.RESET_ALL}")  # Verbose error
+            return None, None  # Indicate failure
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def get_augmented_sample_count(original_csv_path, config=None) -> int:
     """
     Determine the total number of augmented samples produced for a given original CSV.
