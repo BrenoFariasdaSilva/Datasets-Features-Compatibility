@@ -109,6 +109,43 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def validate_config_structure(config: dict):
+    """
+    Ensure required keys exist and have correct types for dataset_descriptor.
+
+    :param config: The configuration dictionary to validate.
+    :return: None, raises ValueError if validation fails.
+    """
+
+    if not isinstance(config, dict):  # Verify config is a dictionary before accessing keys
+        raise ValueError("config must be a dictionary")  # Raise when config is not a dict
+    dd = config.get("dataset_descriptor")  # Extract the dataset_descriptor section
+    if not isinstance(dd, dict):  # Verify dataset_descriptor section is a mapping
+        raise ValueError("config.dataset_descriptor must be a mapping")  # Raise when section is missing or invalid
+
+    expected = {
+        "include_preprocessing_metrics": bool,  # Boolean flag for preprocessing metrics
+        "include_data_augmentation_info": bool,  # Boolean flag for augmentation info
+        "generate_table_image": bool,  # Boolean flag for table image generation
+        "table_image_format": str,  # String format for table images
+        "csv_output_suffix": str,  # String suffix for CSV output files
+        "class_column_name": str,  # String name of the class column
+        "dropna_before_analysis": bool,  # Boolean flag for NaN dropping
+        "compute_class_distribution": bool,  # Boolean flag for class distribution computation
+        "compute_feature_statistics": bool,  # Boolean flag for feature statistics computation
+        "round_decimals": int,  # Integer number of decimal places for rounding
+    }  # Expected key-to-type mapping for validation
+
+    for key, typ in expected.items():  # Iterate over required keys and their expected types
+        if key not in dd:  # Verify required key is present in the section
+            raise ValueError(f"Missing required config key: dataset_descriptor.{key}")  # Raise when key is absent
+        if not isinstance(dd[key], typ):  # Verify the value has the correct type
+            raise ValueError(f"Invalid type for dataset_descriptor.{key}: expected {typ.__name__}")  # Raise on type mismatch
+
+    if dd["round_decimals"] < 0:  # Verify round_decimals is non-negative
+        raise ValueError("dataset_descriptor.round_decimals must be >= 0")  # Raise when value is negative
+
+
 def verbose_output(true_string="", false_string=""):
     """
     Output a message based on whether verbose mode is enabled via environment variable.
