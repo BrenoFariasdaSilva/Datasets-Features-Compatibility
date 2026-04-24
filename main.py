@@ -109,6 +109,22 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def configure_multiprocessing_startup() -> None:
+    """
+    Configure multiprocessing startup behavior for safe macOS process semantics.
+
+    :return: None.
+    """
+
+    try:  # Wrap startup configuration with module-consistent error handling
+        mp.set_start_method("spawn", force=True)  # Force spawn context to prevent macOS fork-related semaphore lifecycle conflicts
+    except RuntimeError:  # Ignore context configuration errors when method is already fixed in this process
+        pass  # Preserve startup flow when start method cannot be changed
+    except Exception as e:  # Capture unexpected failures and keep telemetry behavior consistent
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def preprocess_dataframe(df, remove_zero_variance=True):
     """
     Preprocess a DataFrame by removing rows with NaN or infinite values and
