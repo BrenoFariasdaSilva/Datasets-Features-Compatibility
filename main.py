@@ -2146,13 +2146,16 @@ def get_dataset_file_info(filepath, df=None, low_memory=None):
         verbose_output(
             f"{BackgroundColors.GREEN}Extracting dataset information from: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}"
         )  # Output start message for dataset info extraction
-        verbose_output(f"{BackgroundColors.GREEN}Processing dataset: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}")  # Log dataset processing start without breaking the active progress bar
-
+        
+        mem_before, total_mem, percent_before, used_cores_before, total_cores_before, cpu_percent_before = report_resources_usage(f"Before Loading Dataset File", filepath)  # Capture full resource state before dataset load
+        
         if df is None:
             df = load_dataset(filepath, low_memory)  # Load the dataset
 
         if df is None:  # If the dataset could not be loaded
             return None  # Return None
+        
+        mem_after, total_mem_after, percent_after, used_cores_after, total_cores_after, cpu_percent_after = report_resources_usage(f"After Loading Dataset File", filepath)  # Capture full resource state after dataset load
 
         original_num_rows = len(df)  # Capture original number of rows immediately after read
         original_num_features = df.shape[1] if hasattr(df, "shape") else 0  # Capture original feature count
