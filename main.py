@@ -109,6 +109,19 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def format_percentage(p: float) -> str:
+    """
+    Format a float as a percentage string without unnecessary trailing zeros.
+
+    :param p: Float value to format.
+    :return: Formatted percentage string.
+    """
+    
+    string = f"{p:.4f}"  # Format with 4 decimal places
+    string = string.rstrip("0").rstrip(".") if "." in string else string  # Trim trailing zeros and dot
+    return string  # Return the cleaned percentage string
+
+
 def build_class_distribution_string(counts: "pd.Series") -> str:
     """
     Build a dictionary-like class distribution string from a pandas Series of counts.
