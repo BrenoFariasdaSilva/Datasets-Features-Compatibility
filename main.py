@@ -109,6 +109,26 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def verbose_output(true_string="", false_string=""):
+    """
+    Output a message based on whether verbose mode is enabled via environment variable.
+
+    :param true_string: The string to be outputted if verbose mode is enabled.
+    :param false_string: The string to be outputted if verbose mode is disabled.
+    :return: None.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_flag = os.environ.get("DD_DESCRIPTOR_VERBOSE", "False").lower() in ("1", "true", "yes")  # Resolve verbose flag from environment variable
+        if verbose_flag and true_string != "":  # Verify verbose is enabled and true_string is non-empty
+            print(true_string)  # Output the true string when verbose mode is active
+        elif false_string != "":  # Verify false_string is non-empty for non-verbose output
+            print(false_string)  # Output the false string when verbose mode is inactive
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def resolve_entry_with_trailing_space(current_path: str, entry: str, stripped_part: str) -> str:
     """
     Resolve and optionally rename a directory entry with trailing spaces.
