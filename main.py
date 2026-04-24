@@ -65,6 +65,7 @@ import numpy as np  # For numerical operations
 import os  # For running a command in the terminal
 import pandas as pd  # For data manipulation
 import platform  # For getting the operating system name
+import psutil  # Local import to avoid global dependency if not needed
 import re  # For regex operations
 import sys  # For system-specific parameters and functions
 import time  # Import time locally to perform retry timing and ensure dependency is available at runtime
@@ -2045,6 +2046,27 @@ def extract_classes_and_distribution(df: "pd.DataFrame") -> tuple:
     except Exception as e:  # Preserve exception reporting pattern
         print(str(e))  # Print error to terminal for server logs
         raise  # Re-raise to preserve original failure semantics
+
+
+def get_process_cpu_usage(process: psutil.Process) -> tuple[int, int, float]:
+    """
+    Compute CPU usage and logical CPU count for a given process.
+
+    :param process: psutil process instance.
+    :return: Tuple containing (used_cpu_cores, total_cpu_cores, cpu_percent)
+    """
+
+    cpu_times = process.cpu_times()  # Retrieve CPU time statistics for process
+
+    cpu_percent = process.cpu_percent(interval=0.1)  # Compute CPU usage over short sampling interval
+
+    total_cpu_cores = os.cpu_count() or 1  # Detect total system logical CPU cores
+
+    cpu_affinity = process.cpu_affinity() if hasattr(process, "cpu_affinity") else None  # Retrieve CPU affinity if available
+
+    used_cpu_cores = len(cpu_affinity) if cpu_affinity else total_cpu_cores  # Estimate active/assigned cores or fallback to total
+
+    return used_cpu_cores, total_cpu_cores, cpu_percent  # Return CPU usage metrics
 
 
 def get_dataset_file_info(filepath, df=None, low_memory=None):
