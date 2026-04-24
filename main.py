@@ -109,6 +109,31 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def detect_label_column(columns):
+    """
+    Try to guess the label column based on common naming conventions.
+
+    :param columns: List of column names
+    :return: The name of the label column if found, else None
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        candidates = ["label", "class", "target", "y", "category"]  # Common label column names to verify for exact matches
+
+        for col in columns:  # First search for exact matches
+            if col.lower() in candidates:  # Verify if the column name matches any candidate exactly
+                return col  # Return the column name if found
+
+        for col in columns:  # Second search for partial matches
+            if "target" in col.lower() or "label" in col.lower():  # Verify if the column name contains any candidate
+                return col  # Return the column name if found
+
+        return ""  # Return empty string if no label column is found (fix type issue)
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def summarize_features(df):
     """
     Summarizes number of samples, features, and feature types.
