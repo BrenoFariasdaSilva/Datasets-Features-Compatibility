@@ -54,22 +54,33 @@ Limitations / TODO
 """
 
 
+import argparse  # For parsing CLI arguments
 import atexit  # For playing a sound when the program finishes
+import dataframe_image as dfi  # For exporting DataFrame as PNG images
 import datetime  # For timestamping
 import gc  # For explicit garbage collection
 import matplotlib.pyplot as plt  # For plotting t-SNE results
+import multiprocessing as mp  # For explicit process and semaphore resource finalization
 import numpy as np  # For numerical operations
 import os  # For running a command in the terminal
 import pandas as pd  # For data manipulation
 import platform  # For getting the operating system name
+import re  # For regex operations
 import sys  # For system-specific parameters and functions
+import time  # Import time locally to perform retry timing and ensure dependency is available at runtime
+import traceback  # For printing full exception tracebacks
 import warnings  # For suppressing pandas warnings when requested
+import yaml  # For optional config.yaml loading when locating WGANGP outputs
 from colorama import Style  # For coloring the terminal
+from inspect import signature  # For inspecting function signatures
 from Logger import Logger  # For logging output to both terminal and file
+from mpl_toolkits.mplot3d import Axes3D  # For 3D plotting
 from pathlib import Path  # For handling file paths
+from PIL import Image  # For verifying image dimensions and upscaling if necessary
 from sklearn.manifold import TSNE  # For t-SNE dimensionality reduction
 from sklearn.preprocessing import StandardScaler  # For feature scaling
 from tqdm import tqdm  # For progress bars
+from typing import Any, cast  # For type hinting
 
 # Macros:
 class BackgroundColors:  # Colors for the terminal
