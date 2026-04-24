@@ -109,6 +109,45 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def collect_group_files(paths, file_extension=".csv", config: dict | None = None):
+    """
+    Collect all matching files for a group of paths.
+
+    :param paths: List of file or directory paths to search.
+    :param file_extension: File extension to filter (default: ".csv").
+    :param config: Optional configuration dictionary passed to collect_matching_files.
+    :return: Sorted list of unique file paths.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Collecting {file_extension} files from specified paths...{Style.RESET_ALL}"
+        )  # Output collection message
+
+        files = []  # Initialize collection list
+
+        for p in paths:  # Iterate over each path
+            if os.path.isdir(p):  # If path is a directory
+                files.extend(collect_matching_files(p, file_extension, config=config))  # Collect matching files
+            elif os.path.isfile(p) and p.endswith(file_extension):  # If path is a file with correct extension
+                files.append(p)  # Add file to list
+
+        unique_files = list(set(files))  # Remove duplicates while preserving no particular order
+
+        files_with_size = []  # Prepare list to hold (path, size) tuples for robust sorting
+        for f in unique_files:  # Iterate files to resolve their sizes
+            try:  # Attempt to get file size and handle any filesystem issues gracefully
+                size = os.path.getsize(f)  # Get the file size in bytes for sorting by magnitude
+            except Exception:  # If size retrieval fails for any file
+                size = 0  # Fallback to zero size to avoid breaking the sort when file is inaccessible
+            files_with_size.append((f, size))  # Store tuple of file path and its size for later sorting
+
+        return [p for p, _ in sorted(files_with_size, key=lambda x: (-x[1], x[0]))]  # Sort by size descending then by path for determinism
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def compute_group_features(files, low_memory=None):
     """
     Compute common and union features for a list of dataset files.
