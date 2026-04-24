@@ -109,6 +109,22 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def stripe(row):
+    """
+    Apply zebra striping to a DataFrame row for styling.
+
+    :param row: pandas Series representing a DataFrame row.
+    :return: List of CSS styles for each cell in the row to achieve zebra striping.
+    """
+
+    return [
+        "background-color: #ffffff" if row.name % 2 == 0 else "background-color: #f2f2f2"
+        for _ in row
+    ]  # Return alternating background colors per column based on row index parity
+    
+            
+
+
 def apply_zebra_style(df):
     """
     Apply zebra-striping pandas Styler to the provided DataFrame.
