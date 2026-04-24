@@ -109,6 +109,32 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def scale_features(numeric_df):
+    """
+    Standardize numeric features to zero mean and unit variance. Fall back to
+    converting to float64 array if scaling fails.
+
+    :param numeric_df: DataFrame with numeric features
+    :return: Numpy array with scaled features
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Scaling numeric features to zero mean and unit variance.{Style.RESET_ALL}"
+        )  # Output the verbose message
+
+        try:  # Try scaling with sklearn StandardScaler
+            scaler = StandardScaler()  # Create scaler instance
+            X_scaled = scaler.fit_transform(numeric_df.values)  # Fit and transform numeric values
+        except Exception:  # Fallback if scaling fails
+            X_scaled = np.asarray(numeric_df.values, dtype=np.float64)  # Convert to a float64 numpy array
+
+        return X_scaled  # Return the scaled array
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def allocate_remaining_budget(counts, allocations, remaining_budget):
     """
     Function to distribute remaining budget among classes proportionally,
