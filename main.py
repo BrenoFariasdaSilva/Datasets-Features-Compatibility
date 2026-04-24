@@ -109,6 +109,31 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def save_preprocessing_summary_csv(df, base_dir, filename="preprocessing_summary.csv", config: dict | None = None):
+    """
+    Save the preprocessing summary DataFrame to the results directory for the given base_dir.
+
+    :param df: DataFrame produced by `build_preprocessing_summary_dataframe`.
+    :param base_dir: Base directory where dataset results are stored.
+    :param filename: Output CSV filename (default: preprocessing_summary.csv).
+    :param config: Optional configuration dictionary for resolving the output subdirectory.
+    :return: Absolute path to the saved CSV file.
+    """
+
+    try:  # Wrap function body for robust error reporting per module conventions
+        cfg = config or get_default_config()
+        results_subdir = cfg.get("paths", {}).get("dataset_description_subdir", "Dataset_Description")
+        results_dir = os.path.join(base_dir, results_subdir)
+        if not verify_filepath_exists(results_dir):
+            os.makedirs(results_dir, exist_ok=True)
+        out_path = os.path.join(results_dir, filename)
+        generate_csv_and_image(df, out_path, config=cfg)
+        return out_path
+    except Exception as e:  # Preserve exception handling style
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def print_preprocessing_summary_table(df):
     """
     Print a formatted table of the preprocessing summary DataFrame to the terminal.
