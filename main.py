@@ -117,6 +117,7 @@ IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Ana
 
 # Functions Definitions:
 
+
 def verbose_output(true_string="", false_string=""):
    """
    Outputs a message if the VERBOSE constant is set to True.
@@ -131,6 +132,7 @@ def verbose_output(true_string="", false_string=""):
    elif false_string != "":  # If the false_string is set
       print(false_string)  # Output the false statement string
 
+
 def verify_filepath_exists(filepath):
    """
    Verify if a file or folder exists at the specified path.
@@ -142,6 +144,7 @@ def verify_filepath_exists(filepath):
    verbose_output(f"{BackgroundColors.GREEN}Verifying if the file or folder exists at the path: {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}")  # Output the verbose message
 
    return os.path.exists(filepath)  # Return True if the file or folder exists, False otherwise
+
 
 def collect_matching_files(input_dir, file_format=".csv", ignore_files=IGNORE_FILES, ignore_dirs=IGNORE_DIRS,):
    """
@@ -186,6 +189,7 @@ def collect_matching_files(input_dir, file_format=".csv", ignore_files=IGNORE_FI
    
    return sorted_matching_files  # Return the sorted list of matching files
 
+
 def build_headers_map(filepaths, low_memory=True):
    """
    Build a mapping of file path -> list of header columns.
@@ -211,6 +215,7 @@ def build_headers_map(filepaths, low_memory=True):
 
    return headers  # Return filepath->headers mapping
 
+
 def compute_common_features(headers_map):
    """
    Compute the intersection of headers across all files and determine
@@ -234,6 +239,7 @@ def compute_common_features(headers_map):
 
    return common, match_all  # Return shared features and match flag
 
+
 def load_dataset(filepath, low_memory=True):
    """
    Loads a dataset from a CSV file.
@@ -252,6 +258,7 @@ def load_dataset(filepath, low_memory=True):
    except Exception as e:  # If an error occurs
       print(f"{BackgroundColors.RED}Error loading {BackgroundColors.GREEN}{filepath}: {e}{Style.RESET_ALL}")
       return None  # Return None if an error occurs
+
 
 def preprocess_dataframe(df, remove_zero_variance=True):
    """
@@ -280,6 +287,7 @@ def preprocess_dataframe(df, remove_zero_variance=True):
 
    return df_clean  # Return the cleaned DataFrame
 
+
 def detect_label_column(columns):
    """
    Try to guess the label column based on common naming conventions.
@@ -299,6 +307,7 @@ def detect_label_column(columns):
          return col  # Return the column name if found
 
    return None  # Return None if no label column is found
+
 
 def summarize_features(df):
    """
@@ -324,6 +333,7 @@ def summarize_features(df):
 
    return n_samples, n_features, n_numeric, n_int, n_categorical, n_other, categorical_cols_str  # Return the summary values
 
+
 def summarize_missing_values(df):
    """
    Summarizes missing values for the dataset.
@@ -336,6 +346,7 @@ def summarize_missing_values(df):
    missing_summary = ", ".join([f"{col} ({cnt})" for col, cnt in missing_vals.items() if cnt > 0]) if missing_vals.sum() > 0 else "None"  # Create summary string or "None"
 
    return missing_summary  # Return the missing values summary
+
 
 def summarize_classes(df, label_col):
    """
@@ -357,6 +368,7 @@ def summarize_classes(df, label_col):
    
    return "None", "None"  # Return "None" if no label column
 
+
 def coerce_numeric_columns(df):
    """
    Try to extract numeric columns from `df`. If no numeric columns are
@@ -377,6 +389,7 @@ def coerce_numeric_columns(df):
             numeric_df[c] = coerced  # Add the coerced column to the numeric DataFrame
 
    return numeric_df  # Return the numeric-only DataFrame (may be empty)
+
 
 def fill_replace_and_drop(numeric_df):
    """
@@ -400,6 +413,7 @@ def fill_replace_and_drop(numeric_df):
 
    return numeric_df  # Return cleaned numeric DataFrame
 
+
 def compute_initial_alloc(counts, min_per_class):
    """
    Compute initial per-class allocations capped by `min_per_class`.
@@ -417,6 +431,7 @@ def compute_initial_alloc(counts, min_per_class):
    s = sum(initial.values())  # Sum of initial allocations
    
    return initial, s  # Return tuple (initial_alloc, s_min)
+
 
 def allocate_with_min(initial_alloc, counts, max_samples):
    """
@@ -457,6 +472,7 @@ def allocate_with_min(initial_alloc, counts, max_samples):
          
    return alloc  # Return finalized allocations
 
+
 def proportional_alloc(counts, max_samples):
    """
    Compute a proportional allocation across classes when minima cannot be met.
@@ -489,6 +505,7 @@ def proportional_alloc(counts, max_samples):
    final_alloc_local = {c: min(int(counts[c]), base_alloc_local[c]) for c in counts.index}  # Cap by class availability
    
    return final_alloc_local  # Return proportional allocations
+
 
 def sample_indices_from_alloc(labels, allocations, random_state):
    """
@@ -523,6 +540,7 @@ def sample_indices_from_alloc(labels, allocations, random_state):
       sampled_indices_local.extend(sampled_local)  # Append sampled indices
    
    return sampled_indices_local  # Return list of sampled indices
+
 
 def stratified_sample(numeric_df, labels, max_samples, random_state=42, min_per_class=50):
    """
@@ -568,6 +586,7 @@ def stratified_sample(numeric_df, labels, max_samples, random_state=42, min_per_
 
    return numeric_df.loc[sampled_idx].reset_index(drop=True), labels.loc[sampled_idx].reset_index(drop=True)  # Return sampled DataFrame and labels
 
+
 def prepare_numeric_dataset(filepath, low_memory=True, sample_size=5000, random_state=42):
    """
    Load CSV dataset, clean it, extract numeric features, optionally downsample,
@@ -607,6 +626,7 @@ def prepare_numeric_dataset(filepath, low_memory=True, sample_size=5000, random_
 
    return numeric_df, labels  # Return numeric DataFrame and labels
 
+
 def scale_features(numeric_df):
    """
    Standardize numeric features to zero mean and unit variance. Fall back to
@@ -625,6 +645,7 @@ def scale_features(numeric_df):
       X_scaled = np.asarray(numeric_df.values, dtype=np.float64)  # Convert to a float64 numpy array
    
    return X_scaled  # Return the scaled array
+
 
 def allocate_remaining_budget(counts, allocations, remaining_budget):
    """
@@ -658,6 +679,7 @@ def allocate_remaining_budget(counts, allocations, remaining_budget):
          allocations[cls] = min(int(counts[cls]), allocations.get(cls, 0) + base_alloc.get(cls, 0))  # Cap addition by remaining available
 
    return allocations  # Return updated allocations
+
 
 def compute_class_aware_allocations(labels, sample_size, min_class_size=50):
    """
@@ -699,6 +721,7 @@ def compute_class_aware_allocations(labels, sample_size, min_class_size=50):
 
    return allocations  # Return finalized allocations
 
+
 def sample_by_class_allocation(labels, allocations, random_state):
    """
    Sample row indices according to per-class allocations.
@@ -725,6 +748,7 @@ def sample_by_class_allocation(labels, allocations, random_state):
       selected_idx.extend(sampled_local)  # Append sampled indices to selection
    
    return selected_idx  # Return the final list of indices
+
 
 def downsample_with_class_awareness(numeric_df, labels, sample_size, random_state):
    """
@@ -754,6 +778,7 @@ def downsample_with_class_awareness(numeric_df, labels, sample_size, random_stat
       return (numeric_df.loc[selected_idx].reset_index(drop=True), labels.loc[selected_idx].reset_index(drop=True))  # Return downsampled DataFrame and labels
    except Exception:  # On any error, fallback to random sampling
       return numeric_df.sample(n=sample_size, random_state=random_state), None  # Return random sample and no labels
+
 
 def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42, n_components=2):
    """
@@ -787,6 +812,7 @@ def initialize_and_fit_tsne(X, perplexity=30, n_iter=1000, random_state=42, n_co
    tsne = TSNE(**tsne_kwargs)  # Initialize t-SNE with compatible args
    X_emb = tsne.fit_transform(X)  # Compute embedding
    return X_emb  # Return the embedding
+
 
 def save_tsne_plot(X_emb, labels, output_path, title):
    """
@@ -827,6 +853,7 @@ def save_tsne_plot(X_emb, labels, output_path, title):
    plt.savefig(output_path, dpi=150)  # Save figure to disk
    plt.close()  # Close figure to free memory
 
+
 def save_tsne_plot_3d(X_emb, labels, output_path, title):
    """
    Create and save a 3D t-SNE scatter plot.
@@ -864,6 +891,7 @@ def save_tsne_plot_3d(X_emb, labels, output_path, title):
    plt.tight_layout()  # Adjust layout
    plt.savefig(output_path, dpi=150)  # Save figure to disk
    plt.close()  # Close figure to free memory
+
 
 def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=30, n_iter=1000, random_state=42, output_dir=None):
    """
@@ -930,6 +958,7 @@ def generate_tsne_plot(filepath, low_memory=True, sample_size=5000, perplexity=3
       print(f"{BackgroundColors.RED}t-SNE generation failed for {filepath}: {e}{Style.RESET_ALL}")  # Verbose error
       return None, None  # Indicate failure
 
+
 def get_dataset_file_info(filepath, low_memory=True):
    """
    Extracts dataset information from a CSV file and returns it as a dictionary.
@@ -980,6 +1009,7 @@ def get_dataset_file_info(filepath, low_memory=True):
 
    return result  # Return the dataset information
 
+
 def get_file_common_and_extras(headers_map, filepath, common_features):
    """
    Return the sorted common features list and extra columns for a specific file, using normalized feature names (lowercase + strip).
@@ -1003,6 +1033,7 @@ def get_file_common_and_extras(headers_map, filepath, common_features):
 
    return common_list, extras  # Return common + extras lists
 
+
 def write_report(report_rows, base_dir, output_filename):
    """
    Writes the report rows to a CSV file.
@@ -1023,6 +1054,7 @@ def write_report(report_rows, base_dir, output_filename):
    os.makedirs(results_dir, exist_ok=True)  # Create results directory if it doesn't exist
    report_csv_path = os.path.join(results_dir, output_filename)  # Path to save the report CSV
    report_df.to_csv(report_csv_path, index=False)  # Save the report to a CSV file
+
 
 def generate_dataset_report(input_path, file_extension=".csv", low_memory=True, output_filename=RESULTS_FILENAME):
    """
@@ -1088,6 +1120,7 @@ def generate_dataset_report(input_path, file_extension=".csv", low_memory=True, 
    else:  # If no report rows were generated
       return False  # Return False indicating failure
 
+
 def collect_group_files(paths, file_extension=".csv"):
    """
    Collect all matching files for a group of paths.
@@ -1108,6 +1141,7 @@ def collect_group_files(paths, file_extension=".csv"):
          files.append(p)  # Add file to list
 
    return sorted(set(files))  # Remove duplicates and sort
+
 
 def compute_group_features(files, low_memory=True):
    """
@@ -1133,6 +1167,7 @@ def compute_group_features(files, low_memory=True):
    common_features = set([c.strip().lower() for c in common_features])  # Normalize common features: strip whitespace and lowercase
 
    return set(common_features), union_features  # Return both sets
+
 
 def generate_pairwise_report(group_info):
    """
@@ -1171,6 +1206,7 @@ def generate_pairwise_report(group_info):
 
    return rows  # Return the list of report rows
 
+
 def adjust_rows_for_group(report_rows, group_name):
    """
    Adjust pairwise rows so that the target group always appears as Dataset A.
@@ -1200,6 +1236,7 @@ def adjust_rows_for_group(report_rows, group_name):
          adjusted.append(dict(row))  # Keep as-is
 
    return adjusted  # Return adjusted rows
+
 
 def generate_cross_dataset_report(datasets_dict, file_extension=".csv", low_memory=True, output_filename=None):
    """
@@ -1241,6 +1278,7 @@ def generate_cross_dataset_report(datasets_dict, file_extension=".csv", low_memo
 
    return saved_any  # Return whether any report was saved
 
+
 def calculate_execution_time(start_time, finish_time):
    """
    Calculates the execution time between start and finish times and formats it as hh:mm:ss.
@@ -1254,6 +1292,7 @@ def calculate_execution_time(start_time, finish_time):
    hours, remainder = divmod(delta.seconds, 3600)  # Calculate the hours, minutes and seconds
    minutes, seconds = divmod(remainder, 60)  # Calculate the minutes and seconds
    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"  # Format the execution time
+
 
 def play_sound():
    """
@@ -1274,6 +1313,7 @@ def play_sound():
          print(f"{BackgroundColors.RED}The {BackgroundColors.CYAN}{current_os}{BackgroundColors.RED} is not in the {BackgroundColors.CYAN}SOUND_COMMANDS dictionary{BackgroundColors.RED}. Please add it!{Style.RESET_ALL}")
    else:  # If the sound file does not exist
       print(f"{BackgroundColors.RED}Sound file {BackgroundColors.CYAN}{SOUND_FILE}{BackgroundColors.RED} not found. Make sure the file exists.{Style.RESET_ALL}")
+
 
 def main():
    """
