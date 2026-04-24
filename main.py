@@ -109,6 +109,43 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def get_default_config() -> dict:
+    """
+    Return default configuration used by dataset_descriptor.py.
+
+    :return: A dictionary containing default configuration values for dataset_descriptor.py.
+    """
+    
+    return {
+        "dataset_descriptor": {
+            "low_memory": True,
+            "include_preprocessing_metrics": True,
+            "include_data_augmentation_info": True,
+            "generate_table_image": True,
+            "table_image_format": "png",
+            "table_image_timeout_ms": 30000,
+            "csv_output_suffix": "_description",
+            "class_column_name": "Label",
+            "dropna_before_analysis": False,
+            "compute_class_distribution": True,
+            "compute_feature_statistics": True,
+            "round_decimals": 4,
+        },
+        "paths": {
+            "dataset_description_subdir": "Dataset_Description",
+            "preprocessing_summary_subdir": "Preprocessing_Summary",
+            "data_augmentation_dir": "Data_Augmentation",
+            "data_augmentation_sample_dir": "Samples",
+            "logs_dir": "./Logs",
+        },
+        "execution": {
+            "verbose": True,
+            "cross_dataset_validate": True,
+        },
+        "datasets": {},
+    }
+
+
 def deep_merge_dicts(base: dict, override: dict) -> dict:
     """
     Recursively merge override into base and return new dict.
