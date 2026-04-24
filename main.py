@@ -109,6 +109,24 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def deep_merge_dicts(base: dict, override: dict) -> dict:
+    """
+    Recursively merge override into base and return new dict.
+
+    :param base: The base dictionary to merge into (not modified).
+    :param override: The dictionary with override values (not modified).
+    :return: A new dictionary resulting from deep merging override into base.
+    """
+
+    result = dict(base)  # Create a shallow copy of base to avoid mutation
+    for k, v in (override or {}).items():  # Iterate over override entries
+        if k in result and isinstance(result[k], dict) and isinstance(v, dict):  # Verify both values are nested dicts
+            result[k] = deep_merge_dicts(result[k], v)  # Recursively merge nested dicts
+        else:  # Non-dict values are overwritten directly
+            result[k] = v  # Set override value in result
+    return result  # Return the merged dictionary
+
+
 def load_config_file(path: str = "config.yaml") -> dict:
     """
     Load configuration from a YAML file if it exists, otherwise return an empty dict.
