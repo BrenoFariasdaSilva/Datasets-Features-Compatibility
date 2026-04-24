@@ -109,6 +109,50 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def upscale_image_if_needed(path, fallback=False):
+    """
+    This function verifies the dimensions of the image at the given path and upscales it if either dimension is below 4k (3840x2160).
+    
+    :param path: Absolute path to the image file to verify and potentially upscale
+    :param fallback: Boolean indicating if this upscale is being attempted after a fallback export (for logging purposes)
+    :return: None
+    """
+    
+    try:  # Guard image operations to avoid raising from image processing
+        with Image.open(path) as im:  # Open the output image for inspection and possible resizing
+            w, h = im.size  # Capture current image width and height
+            if w < 3840 or h < 2160:  # Verify if image is smaller than 4k thresholds
+                target_w = max(3840, w)  # Compute target width ensuring at least 3840
+                target_h = max(2160, h)  # Compute target height ensuring at least 2160
+                scale = max(target_w / float(w), target_h / float(h))  # Compute scale factor to meet both dimensions
+                new_size = (int(w * scale), int(h * scale))  # Compute new integer dimensions for resizing
+                resample_filter = getattr(Image, "LANCZOS", None)  # Attempt to get LANCZOS attribute from PIL.Image
+                if resample_filter is None:  # If LANCZOS attribute is not present on PIL.Image
+                    resampling_enum = getattr(Image, "Resampling", None)  # Attempt to get Resampling enum from PIL.Image
+                    resample_filter = getattr(resampling_enum, "LANCZOS", None) if resampling_enum is not None else None  # Use Resampling.LANCZOS if available else None
+                if resample_filter is None:  # If no LANCZOS candidate was found
+                    resample_filter = getattr(Image, "BICUBIC", None)  # Attempt to get BICUBIC attribute from PIL.Image
+                    if resample_filter is None:  # If BICUBIC is not present on PIL.Image
+                        resampling_enum = getattr(Image, "Resampling", None)  # Attempt to get Resampling enum from PIL.Image again
+                        resample_filter = getattr(resampling_enum, "BICUBIC", None) if resampling_enum is not None else None  # Use Resampling.BICUBIC if available else None
+                    if resample_filter is None:  # If still no BICUBIC candidate was found
+                        resample_filter = getattr(Image, "NEAREST", 0)  # Fallback to Image.NEAREST constant via getattr with numeric default
+                im_resized = im.resize(new_size, resample=resample_filter)  # Resize using chosen resample filter with explicit resample argument
+                orig_dpi = im.info.get("dpi") if hasattr(im, "info") else None  # Retrieve original DPI metadata if available
+                
+                if orig_dpi:  # Verify if DPI metadata exists
+                    im_resized.save(path, dpi=orig_dpi)  # Save resized image preserving original DPI
+                else:
+                    im_resized.save(path)  # Save resized image without explicit DPI metadata
+                
+                if fallback:  # Verify whether this upscale was triggered from fallback export
+                    print(f"{BackgroundColors.GREEN}[DEBUG] Upscaled image to meet 4k (fallback): {BackgroundColors.CYAN}{path}{Style.RESET_ALL}")  # Log fallback upscale event with colored output
+                else:  # Verify whether this upscale was a normal upscale
+                    print(f"{BackgroundColors.GREEN}[DEBUG] Upscaled image to meet 4k: {BackgroundColors.CYAN}{path}{Style.RESET_ALL}")  # Log normal upscale event with colored output
+    except Exception:  # Ignore any image processing errors to avoid cascading failures
+        pass  # Continue silently on upscale failures to preserve original behavior
+
+
 def attempt_matplotlib_export_fallback(styled_df, output_path, e_inner):
     """
     Attempt to export a styled DataFrame to PNG using pure matplotlib table rendering as a last-resort fallback.
