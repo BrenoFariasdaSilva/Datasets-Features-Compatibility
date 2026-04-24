@@ -109,6 +109,45 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def sample_indices_from_alloc(labels, allocations, random_state):
+    """
+    Draw indices from `labels` according to `allocations` using `random_state`.
+
+    For each class in `allocations`, this function selects the requested number
+    of indices without replacement (or all available indices if the
+    allocation exceeds availability). The selection is reproducible via the
+    provided `random_state`.
+
+    :param labels: pandas Series with class labels
+    :param allocations: dict mapping class -> number of samples to draw
+    :param random_state: integer seed for RNG reproducibility
+    :return: list of sampled row indices
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        rng_local = np.random.RandomState(random_state)  # RNG for reproducibility
+        sampled_indices_local = []  # Container for sampled indices
+
+        for cls in allocations:  # Iterate classes in allocation order
+            cls_idx_local = labels[labels == cls].index.to_list()  # Indices belonging to the class
+            k_local = allocations.get(cls, 0)  # Number to sample for this class
+
+            if k_local <= 0:  # Skip when zero allocation
+                continue  # Continue to next class
+
+            if k_local >= len(cls_idx_local):  # If allocation exceeds availability
+                sampled_local = cls_idx_local  # Take all available indices
+            else:  # Otherwise sample without replacement
+                sampled_local = list(rng_local.choice(cls_idx_local, size=k_local, replace=False))  # Draw random sample
+
+            sampled_indices_local.extend(sampled_local)  # Append sampled indices
+
+        return sampled_indices_local  # Return list of sampled indices
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def prepare_numeric_dataset(filepath, low_memory=None, sample_size=5000, random_state=42):
     """
     Load CSV dataset, clean it, extract numeric features, optionally downsample,
