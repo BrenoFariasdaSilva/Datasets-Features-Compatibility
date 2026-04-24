@@ -109,6 +109,48 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def build_headers_map(filepaths, low_memory=None):
+    """
+    Build a mapping of file path -> list of header columns.
+
+    Attempts a lightweight header-only read (`pd.read_csv(..., nrows=0)`)
+    and falls back to `load_dataset` if that fails.
+
+    :param filepaths: Iterable of file paths
+    :param low_memory: Passed to `load_dataset` when falling back
+    :return: dict mapping filepath -> list of column names
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Building headers map for provided file paths.{Style.RESET_ALL}"
+        )  # Output the verbose message
+
+        headers = {}  # Dictionary that will map each filepath to its list of columns
+        for fp in filepaths:  # Iterate over all given file paths
+            try:  # Try header-only read
+                try:  # Attempt UTF-8 header read first to prefer standard encoding
+                    df_headers = pd.read_csv(fp, nrows=0, encoding="utf-8")  # Read header with UTF-8 encoding
+                except UnicodeDecodeError:  # Handle UTF-8 decode failures specifically
+                    try:  # Attempt Latin-1 decoding as first fallback for legacy CSVs
+                        df_headers = pd.read_csv(fp, nrows=0, encoding="latin1")  # Read header with Latin-1 encoding
+                    except UnicodeDecodeError:  # Handle Latin-1 decode failures specifically
+                        df_headers = pd.read_csv(fp, nrows=0, encoding="cp1252")  # Read header with CP1252 encoding as final fallback
+                df_headers.columns = df_headers.columns.str.strip()  # Remove leading/trailing whitespace from column names
+                cols = df_headers.columns.tolist()  # Get column list
+            except Exception:  # If header-only read fails
+                df_tmp = load_dataset(fp, low_memory=low_memory)  # Load full dataset (slow fallback)
+                cols = df_tmp.columns.tolist() if df_tmp is not None else []  # Extract columns if dataset loaded
+                del df_tmp  # Release fallback DataFrame immediately to reclaim memory
+                gc.collect()  # Force garbage collection after releasing the full dataset
+            headers[fp] = cols  # Store the resolved column list for this file
+
+        return headers  # Return filepath->headers mapping
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def compute_common_features(headers_map):
     """
     Compute the intersection of headers across all files and determine
