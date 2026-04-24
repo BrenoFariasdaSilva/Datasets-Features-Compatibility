@@ -109,6 +109,39 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def parse_cli_args(argv=None) -> dict:
+    """
+    Parse CLI arguments and return a dictionary of config overrides.
+
+    :param argv: List of command-line arguments (default: None, which uses sys.argv).
+    :return: Dictionary of config overrides based on CLI arguments.
+    """
+
+    parser = argparse.ArgumentParser(add_help=False)  # Create argument parser without default help option
+    low_memory_group = parser.add_mutually_exclusive_group()
+    low_memory_group.add_argument("--low-memory", dest="low_memory", action="store_true", default=None)
+    low_memory_group.add_argument("--no-low-memory", dest="low_memory", action="store_false", default=None)
+    parser.add_argument("--include_preprocessing_metrics", dest="include_preprocessing_metrics", action="store_true", default=None)
+    parser.add_argument("--no-include_preprocessing_metrics", dest="include_preprocessing_metrics", action="store_false", default=None)
+    parser.add_argument("--include_data_augmentation_info", dest="include_data_augmentation_info", action="store_true", default=None)
+    parser.add_argument("--no-include_data_augmentation_info", dest="include_data_augmentation_info", action="store_false", default=None)
+    parser.add_argument("--generate_table_image", dest="generate_table_image", action="store_true", default=None)
+    parser.add_argument("--no-generate_table_image", dest="generate_table_image", action="store_false", default=None)
+    parser.add_argument("--table_image_format", dest="table_image_format", default=None)
+    parser.add_argument("--csv_output_suffix", dest="csv_output_suffix", default=None)
+    parser.add_argument("--class_column_name", dest="class_column_name", default=None)
+    parser.add_argument("--dropna_before_analysis", dest="dropna_before_analysis", action="store_true", default=None)
+    parser.add_argument("--no-dropna_before_analysis", dest="dropna_before_analysis", action="store_false", default=None)
+    parser.add_argument("--compute_class_distribution", dest="compute_class_distribution", action="store_true", default=None)
+    parser.add_argument("--no-compute_class_distribution", dest="compute_class_distribution", action="store_false", default=None)
+    parser.add_argument("--compute_feature_statistics", dest="compute_feature_statistics", action="store_true", default=None)
+    parser.add_argument("--no-compute_feature_statistics", dest="compute_feature_statistics", action="store_false", default=None)
+    parser.add_argument("--round_decimals", dest="round_decimals", type=int, default=None)
+    parser.add_argument("--config", dest="config", default="config.yaml")
+    args, _ = parser.parse_known_args(argv)  # Parse known args and discard unknown entries
+    return {k: v for k, v in vars(args).items() if v is not None}  # Return only non-None values as overrides
+
+
 def get_config(file_path: str = "config.yaml", cli_args: dict | None = None) -> dict:
     """
     Load and merge configuration with precedence CLI > config.yaml > defaults.
