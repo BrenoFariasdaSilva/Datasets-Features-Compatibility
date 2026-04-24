@@ -109,6 +109,39 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def finalize_multiprocessing_resources() -> None:
+    """
+    Finalize multiprocessing children and tracked shared resources.
+
+    :return: None.
+    """
+
+    try:  # Wrap function body to preserve exception-handling conventions
+        try:  # Iterate active children to avoid orphan processes at interpreter shutdown
+            for child in mp.active_children():  # Traverse active multiprocessing child processes
+                try:  # Join quickly when a child is already exiting
+                    child.join(timeout=0.2)  # Wait briefly for graceful child completion
+                except Exception:  # Ignore join failures to preserve best-effort semantics
+                    pass  # Continue with remaining children when join fails
+
+                if child.is_alive():  # Determine if child remained alive after short grace period
+                    try:  # Attempt forced termination when child does not exit naturally
+                        child.terminate()  # Terminate child process to avoid orphan resources
+                    except Exception:  # Ignore terminate failures to continue cleanup attempts
+                        pass  # Continue cleanup even when termination raises
+                    try:  # Attempt final join after termination request
+                        child.join(timeout=0.5)  # Wait briefly for terminated child to finalize
+                    except Exception:  # Ignore final join failures to preserve best-effort semantics
+                        pass  # Continue cleanup sequence
+        except Exception:  # Ignore failures while enumerating or joining children
+            pass  # Continue with shared-resource tracker cleanup path
+
+        gc.collect()  # Trigger garbage collection after resource finalization attempts
+    except Exception as e:  # Catch outer exceptions to preserve module-wide telemetry behavior
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def configure_multiprocessing_startup() -> None:
     """
     Configure multiprocessing startup behavior for safe macOS process semantics.
