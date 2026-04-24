@@ -109,6 +109,33 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def attempt_chrome_export_fallback(styled_df, output_path, e_inner, export_kwargs, timeout_ms):
+    """
+    Attempt to export a styled DataFrame to PNG using Chrome as the table conversion engine.
+
+    :param styled_df: pandas.Styler object to export as a PNG image.
+    :param output_path: File system path where the exported PNG will be written.
+    :param e_inner: Exception from the previous Playwright attempt, or None when Playwright succeeded.
+    :param export_kwargs: Pre-built keyword arguments dict from which Chrome kwargs will be derived.
+    :param timeout_ms: Timeout in milliseconds to pass to the Chrome conversion engine.
+    :return: None when export succeeded, or the last encountered exception when the Chrome export failed.
+    """
+
+    if e_inner is None:  # Skip Chrome fallback when Playwright already succeeded
+        return None  # Playwright succeeded; no fallback needed
+    try:  # Attempt Chrome-based dataframe_image export as the first deterministic fallback
+        chrome_kwargs = dict(export_kwargs)  # Copy the existing kwargs to preserve all prior options
+        chrome_kwargs["table_conversion"] = "chrome"  # Override conversion engine to Chrome
+        chrome_kwargs["timeout"] = timeout_ms  # Pass the configured timeout to the Chrome conversion engine
+        dfi.export(styled_df, output_path, **chrome_kwargs)  # Attempt PNG export using Chrome conversion
+        print(f"{BackgroundColors.GREEN}[DEBUG] Exported image (chrome fallback): {BackgroundColors.CYAN}{output_path}{Style.RESET_ALL}")  # Log Chrome fallback export success
+        upscale_image_if_needed(output_path, fallback=True)  # Upscale exported image after Chrome fallback
+        print(f"{BackgroundColors.GREEN}[INFO] Table image successfully saved to: {BackgroundColors.CYAN}{os.path.abspath(output_path)}{Style.RESET_ALL}")  # Log absolute save path
+        return None  # Return None to signal Chrome export succeeded
+    except Exception as _e_chrome:  # Record Chrome fallback exception for downstream matplotlib fallback
+        return _e_chrome  # Return exception to allow caller to attempt matplotlib fallback
+
+
 def attempt_playwright_export_with_retry(styled_df, output_path, export_kwargs, timeout_ms):
     """
     Attempt to export a styled DataFrame to PNG using Playwright-based dataframe_image with bounded retries.
