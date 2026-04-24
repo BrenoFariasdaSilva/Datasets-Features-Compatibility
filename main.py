@@ -109,6 +109,57 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def compute_class_aware_allocations(labels, sample_size, min_class_size=50):
+    """
+    Compute per-class sample allocations that preserve class distribution while
+    ensuring small classes (< min_class_size) are fully included.
+
+    Strategy:
+    - Classes with fewer than min_class_size samples: include all samples
+    - Remaining budget: distribute proportionally among larger classes
+    - Use fractional remainder method to allocate leftover samples fairly
+
+    :param labels: pandas Series containing class labels
+    :param sample_size: maximum total samples to allocate
+    :param min_class_size: threshold below which all class samples are included
+    :return: dict mapping class -> number of samples to select
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        counts = labels.value_counts()  # Get per-class counts
+
+        allocations = {
+            cls: min(int(cnt), int(min_class_size)) for cls, cnt in counts.items()
+        }  # Initial allocations for small classes
+
+        remaining_budget = int(sample_size - sum(allocations.values()))  # Remaining samples to allocate
+
+        if remaining_budget > 0:  # If there is remaining budget
+            allocations = allocate_remaining_budget(counts, allocations, remaining_budget)  # Distribute remaining budget
+
+        total_alloc = sum(allocations.values())  # Total allocated samples
+        if total_alloc > sample_size:  # Safety verification to reduce overallocation
+            sorted_by_alloc = sorted(
+                allocations.items(), key=lambda x: x[1], reverse=True
+            )  # Sort classes by allocation descending
+            i = 0  # Index for iteration
+            while total_alloc > sample_size and i < len(sorted_by_alloc):  # While overallocation exists
+                cls, cur = sorted_by_alloc[i]  # Current class and its allocation
+                reducible = cur - min(
+                    int(counts[cls]), int(min_class_size)
+                )  # Amount that can be reduced without violating minima
+                if reducible > 0:  # If there is reducible allocation
+                    remove = min(reducible, total_alloc - sample_size)  # Amount to remove
+                    allocations[cls] -= remove  # Reduce allocation
+                    total_alloc -= remove  # Update total allocation
+                i += 1  # Move to next class
+
+        return allocations  # Return finalized allocations
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def sample_by_class_allocation(labels, allocations, random_state):
     """
     Sample row indices according to per-class allocations.
