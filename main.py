@@ -109,6 +109,62 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def generate_cross_dataset_report(datasets_dict, file_extension=".csv", low_memory=None, output_filename=None, config: dict | None = None):
+    """
+    Generate a cross-dataset feature-compatibility report comparing dataset
+    groups defined in `datasets_dict`. Produces pairwise comparisons between
+    dataset groups and writes a CSV report named `Cross_{RESULTS_FILENAME}` by
+    default into the `RESULTS_DIR`.
+
+    :param datasets_dict: Dict mapping dataset group name -> list of paths.
+    :param file_extension: Extension to search for (default: .csv).
+    :param low_memory: Passed to CSV loader when building headers.
+    :param output_filename: Optional filename to write; defaults to Cross_{RESULTS_FILENAME}.
+    :param config: Optional configuration dictionary for resolving output paths and settings.
+    :return: True on success, False otherwise.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        cfg = config or get_default_config()
+        if output_filename is None:  # If no output filename is provided
+            suffix = cfg.get("dataset_descriptor", {}).get("csv_output_suffix", "_description")  # Get suffix from config or default
+            output_filename = f"Cross_{suffix.lstrip('_')}" if suffix else "Cross_dataset_descriptor.csv"  # Build cross filename
+        if not output_filename.lower().endswith(".csv"):  # Verify the output filename has a .csv extension
+            output_filename = f"{output_filename}.csv"  # Append .csv extension when missing
+
+        group_info = {}  # Map group_name -> {"files": [...], "common": set(), "union": set()}
+        for group_name, paths in datasets_dict.items():  # Iterate over dataset groups
+            all_files = collect_group_files(paths, file_extension, config=cfg)  # Collect files for this group
+            common_features, union_features = compute_group_features(all_files, low_memory=low_memory)  # Compute features
+
+            group_info[group_name] = {
+                "files": all_files,
+                "common": set(common_features),
+                "union": union_features,
+            }  # Store group info
+
+        report_rows = generate_pairwise_report(group_info)  # Generate pairwise report rows
+        if not report_rows:  # If no report rows were generated
+            return False  # Return False indicating failure
+
+        saved_any = False  # Flag to track if any report was saved
+        for group_name, info in group_info.items():  # Iterate over each group
+            base_dir = (
+                os.path.dirname(os.path.abspath(info["files"][0])) if info["files"] else os.getcwd()
+            )  # Base dir from first file or current dir
+            adjusted_rows = adjust_rows_for_group(report_rows, group_name)  # Adjust rows for this group
+            try:  # Try to write the report
+                write_report(adjusted_rows, base_dir, output_filename, config=cfg)  # Write the report
+                saved_any = True  # Mark that at least one report was saved
+            except Exception:  # Fail silently
+                pass  # Do nothing on failure
+
+        return saved_any  # Return whether any report was saved
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def to_seconds(obj):
     """
     Converts various time-like objects to seconds.
