@@ -109,6 +109,26 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def extract_labels_info(df: pd.DataFrame) -> tuple:  # Define function to extract label info with type hints
+    """
+    Extract number of unique labels and label list.
+
+    :param df: pandas DataFrame containing potential label column.
+    :return: Tuple of (num_labels, labels_list).
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        label_col = detect_label_column(df.columns)  # Detect potential label column using existing heuristic
+        if label_col and label_col in df.columns:  # If label column exists in the DataFrame
+            labels = df[label_col].dropna().unique().tolist()  # Extract unique non-NaN labels preserving types
+            labels_sorted = sorted(labels, key=lambda x: str(x))  # Sort labels deterministically by string representation
+            return int(len(labels_sorted)), labels_sorted  # Return integer count and sorted list of labels
+        return 0, []  # Return zero and empty list when no label column is detected
+    except Exception as e:  # Catch any exception to preserve existing telemetry behavior
+        print(str(e))  # Print exception to terminal for visibility
+        raise  # Re-raise exception to maintain original semantics
+
+
 def format_labels_list(labels_list: list) -> str:  # Define function to format labels list into stable CSV string
     """
     Format labels list into stable CSV string.
