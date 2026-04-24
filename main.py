@@ -109,6 +109,24 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def resolve_tsne_output_directory(filepath, output_dir, config):
+    """
+    Resolve the t-SNE output directory from an explicit path or from the configuration, and create it.
+
+    :param filepath: Path to the source CSV file used to derive the default output directory location.
+    :param output_dir: Explicit output directory path when already known; None triggers config-based resolution.
+    :param config: Configuration dictionary used to read the data separability subdirectory name; None loads the default.
+    :return: Resolved absolute output directory path that is guaranteed to exist on disk.
+    """
+
+    if output_dir is None:  # Verify when no explicit directory was provided by the caller
+        cfg = config or get_default_config()  # Load the default config when no external config was passed
+        tsne_subdir = cfg.get("paths", {}).get("data_separability_subdir", "Data_Separability")  # Read the configured t-SNE subdirectory name with fallback
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(filepath)), tsne_subdir)  # Build the output path relative to the dataset's directory
+    os.makedirs(output_dir, exist_ok=True)  # Create the output directory and any missing parents if they do not exist
+    return output_dir  # Return the resolved and created output directory path
+
+
 def generate_tsne_plot(
     filepath,
     df=None,
