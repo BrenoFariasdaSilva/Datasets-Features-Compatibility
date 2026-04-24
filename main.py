@@ -109,6 +109,48 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def proportional_alloc(counts, max_samples):
+    """
+    Compute a proportional allocation across classes when minima cannot be met.
+
+    This function computes a proportional distribution of `max_samples` across
+    classes according to their relative counts. It floors fractional values
+    to integers and then distributes leftover units by descending fractional
+    remainder to ensure the total sums to `max_samples` (subject to class
+    availability caps).
+
+    :param counts: pandas Series with per-class counts
+    :param max_samples: total maximum samples to allocate
+    :return: dict mapping class -> final allocation
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        total_local = int(counts.sum())  # Total samples available across classes
+        float_alloc_local = {
+            c: (max_samples * int(counts[c]) / total_local) for c in counts.index
+        }  # Fractional proportional allocation
+        base_alloc_local = {c: int(float_alloc_local[c]) for c in counts.index}  # Base integer allocation
+        assigned_local = sum(base_alloc_local.values())  # Sum of base allocations
+        leftover_local = max_samples - assigned_local  # Leftover to distribute due to flooring
+        remainders_local = sorted(
+            counts.index, key=lambda c: (float_alloc_local[c] - base_alloc_local[c]), reverse=True
+        )  # Order by fractional remainder
+
+        for c in remainders_local:  # Distribute leftover one-by-one
+            if leftover_local <= 0:  # Stop when leftover exhausted
+                break  # Exit loop
+            if base_alloc_local[c] < int(counts[c]):  # Only increase if class has remaining samples
+                base_alloc_local[c] += 1  # Increment base allocation
+                leftover_local -= 1  # Decrement leftover
+
+        final_alloc_local = {c: min(int(counts[c]), base_alloc_local[c]) for c in counts.index}  # Cap by class availability
+
+        return final_alloc_local  # Return proportional allocations
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def sample_indices_from_alloc(labels, allocations, random_state):
     """
     Draw indices from `labels` according to `allocations` using `random_state`.
