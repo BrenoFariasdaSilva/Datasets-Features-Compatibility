@@ -1,0 +1,81 @@
+# ==============================================================================
+# DATASET DESCRIPTOR — Used by dataset_descriptor.py
+# ==============================================================================
+dataset_descriptor:
+  low_memory: true # The low memory parameter for reading the files.
+  include_preprocessing_metrics: true # Include preprocessing statistics
+  include_data_augmentation_info: true # Include WGANGP augmentation summary column
+  generate_table_image: true # Export table image using dataframe_image
+  table_image_format: "png" # Table image format (png/jpg)
+  csv_output_suffix: "_description" # Suffix for generated descriptor CSV
+  class_column_name: "Label" # Target/class column name
+  dropna_before_analysis: false # Drop NaN rows before computing metrics
+  compute_class_distribution: true # Compute per-class counts and proportions
+  compute_feature_statistics: true # Compute feature-level summary statistics
+  round_decimals: 4 # Number of decimal places for floats
+  datasets: # Dictionary containing dataset paths
+    CAIDA-2007:
+    - "./Datasets/CAIDA 2007/Converted/"
+    CICDDoS2019-Dataset:
+      - "./Datasets/CICDDoS2019/01-12/"
+      - "./Datasets/CICDDoS2019/03-11/"
+    CIC-IDS2017-Dataset:
+      - "./Datasets/CICIDS2017/TrafficLabelling/"
+    ISCX-IDS-2012:
+      - "./Datasets/ISCX IDS 2012/data/CSV/" 
+    KDD-Dataset:
+      - "./Datasets/KDD-Dataset/Converted/"
+    LATAM-DDoS-IoT:
+      - "./Datasets/LATAM DDoS IoT/Converted/"
+    UGR-16:
+      - "./Datasets/UGR-16/uniq/"
+    UNSW-NB15-Dataset:
+      - "./Datasets/UNSW-NB15-Dataset/Converted/"
+
+# PATHS — Used by multiple scripts
+# ==============================================================================
+paths: # File and directory paths used across scripts
+  logs_dir: "./Logs" # Directory for log files (shared)
+  datasets_dir: null # Directory containing datasets (null for auto-detect)
+  output_dir: "Feature_Analysis" # Output directory for GA results
+  csv_path: null # Default dataset CSV path (null for auto-detect)
+  out_dir: "outputs" # Output directory for WGAN-GP models/logs
+  checkpoint_subdir: "Checkpoints" # Checkpoints subdirectory name
+  data_augmentation_dir: "Data_Augmentation" # Base directory for all augmentation artifacts
+  data_augmentation_sample_dir: "Samples" # Subdirectory containing generated augmented dataset CSV files
+
+# ==============================================================================
+# EXECUTION — Used by multiple scripts
+# ==============================================================================
+execution: # Execution control and per-script overrides
+  verbose: false # Enable verbose output messages
+  play_sound: true # Play sound notification when complete
+  skip_train_if_model_exists: false # Skip training if model artifacts exist
+  low_memory: false # Enable low memory mode for pandas operations
+  runs: 10 # Number of GA runs per population size
+  resume_progress: true # Resume from saved state files
+  progress_save_interval: 10 # Save progress every N generations
+  csv_file: null # Optional single CSV file to process (null = process all)
+  process_entire_dataset: false # Process all files in dataset (true) or single file (false)
+  test_data_augmentation: true # Enable data augmentation testing experiments
+  classification_mode: "both" # Classification mode: "separate_files", "combined_files", or "both" (default: both)
+  results_suffix: "_result" # Suffix to add to generated filenames
+  match_filenames_to_process: [""] # List of specific filenames to match
+  ignore_files: ["_data_augmented"] # List of filename substrings to ignore
+  ignore_dirs: # List of directory names to ignore
+    - "Classifiers" 
+    - "Classifiers_Hyperparameters"
+    - "Dataset_Description"
+    - "Data_Separability"
+    - "Feature_Analysis"
+
+# ==============================================================================
+# SOUND — Used by multiple scripts
+# ==============================================================================
+sound: # Sound notification settings
+  enabled: true # Enable sound notifications
+  commands: # Commands to play sound for each operating system
+    Darwin: "afplay"
+    Linux: "aplay"
+    Windows: "start"
+  file: "./.assets/Sounds/NotificationSound.wav" # Path to the sound file
