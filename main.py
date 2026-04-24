@@ -109,6 +109,65 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def get_augmented_sample_count(original_csv_path, config=None) -> int:
+    """
+    Determine the total number of augmented samples produced for a given original CSV.
+
+    :param original_csv_path: Path to the original CSV dataset file.
+    :param config: Optional configuration dictionary for resolving augmentation directory paths.
+    :return: Total number of augmented samples found, or 0 when no augmentation is present.
+    """
+    
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        p = Path(original_csv_path)  # Convert original CSV path to a Path object
+
+        cfg = {}  # Initialize empty config dict as base
+        if config and isinstance(config, dict):  # Verify caller-provided config is a valid dict
+            cfg = config  # Use the caller-provided config
+        else:  # Load config from disk when caller did not provide one
+            cfg_path = Path(__file__).parent / "config.yaml"  # Build path to config.yaml next to this file
+            if cfg_path.exists():  # Verify config file exists before attempting read
+                try:  # Attempt to load and parse the config file
+                    with open(cfg_path, "r", encoding="utf-8") as _f:  # Open config file for reading
+                        cfg = yaml.safe_load(_f) or {}  # Parse YAML safely with empty dict fallback
+                except Exception:  # Ignore errors when loading config to preserve fallback behavior
+                    cfg = {}  # Reset config to empty dict on read failure
+
+        data_aug_dir = cfg.get("paths", {}).get("data_augmentation_dir", "Data_Augmentation")  # Resolve augmentation base directory from config
+        data_aug_sample_dir = cfg.get("paths", {}).get("data_augmentation_sample_dir", "Samples")  # Resolve augmentation samples subdirectory from config
+        results_suffix = cfg.get("execution", {}).get("results_suffix", "_data_augmented")  # Resolve results suffix from config
+
+        aug_dir = p.parent / data_aug_dir / data_aug_sample_dir  # Build full augmentation directory path using both config variables
+
+        candidate = aug_dir / f"{p.stem}{results_suffix}{p.suffix}"  # Build candidate augmented CSV path using full directory and stem
+
+        if candidate.exists() and candidate.is_file() and candidate.suffix.lower() == ".csv":  # Verify augmented CSV exists, is a file, and has .csv extension
+            try:  # Attempt chunked reading to avoid loading the entire augmented CSV into memory
+                total_rows = 0  # Initialize row counter for incremental chunk accumulation
+                try:  # Attempt chunked UTF-8 read to avoid loading the entire augmented CSV into memory
+                    for chunk in pd.read_csv(candidate, encoding="utf-8", chunksize=10000):  # Read fixed-size chunks to limit peak RAM usage per file
+                        total_rows += len(chunk)  # Accumulate row count from each individual chunk
+                        del chunk  # Release each chunk immediately after counting to free memory
+                except UnicodeDecodeError:  # Handle UTF-8 decode failures specifically
+                    total_rows = 0  # Reset counter before retrying with fallback encoding
+                    try:  # Attempt chunked Latin-1 read as first fallback for legacy CSVs
+                        for chunk in pd.read_csv(candidate, encoding="latin1", chunksize=10000):  # Read fixed-size chunks using Latin-1 encoding
+                            total_rows += len(chunk)  # Accumulate row count from each individual chunk
+                            del chunk  # Release each chunk immediately after counting to free memory
+                    except UnicodeDecodeError:  # Handle Latin-1 decode failures specifically
+                        total_rows = 0  # Reset counter before retrying with CP1252 encoding
+                        for chunk in pd.read_csv(candidate, encoding="cp1252", chunksize=10000):  # Read fixed-size chunks using CP1252 encoding as final fallback
+                            total_rows += len(chunk)  # Accumulate row count from each individual chunk
+                            del chunk  # Release each chunk immediately after counting to free memory
+                return int(total_rows) if total_rows > 0 else 0  # Return total accumulated row count when read successfully
+            except Exception as e:  # Raise RuntimeError when augmented CSV cannot be read
+                raise RuntimeError(f"Failed to read augmented CSV '{candidate}': {e}")  # Propagate as RuntimeError with context
+
+        return 0  # Return 0 when no augmented CSV was found for this dataset
+    except Exception:  # Re-raise all exceptions to preserve original failure semantics
+        raise  # Re-raise to preserve original failure semantics
+
+
 def format_percentage(p: float) -> str:
     """
     Format a float as a percentage string without unnecessary trailing zeros.
