@@ -109,6 +109,25 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def log_config_sources(config: dict, cli_args: dict | None = None):
+    """
+    Log configuration values with their source (CLI/config/default).
+
+    :param config: The merged configuration dictionary.
+    :param cli_args: The dictionary of CLI arguments that were parsed (optional).
+    :return: None.
+    """
+
+    dd = config.get("dataset_descriptor", {})  # Extract dataset_descriptor section from config for logging
+    for k, v in dd.items():  # Iterate over each configuration key-value pair
+        src = "config"  # Assume configuration file as the default source
+        if cli_args and k in cli_args and cli_args[k] is not None:  # Verify if key was overridden via CLI
+            src = "CLI"  # Mark source as CLI when overridden
+        elif k not in (load_config_file().get("dataset_descriptor") or {}):  # Verify if key is absent from config file
+            src = "default"  # Mark source as default when not present in config file
+        print(f"{BackgroundColors.GREEN}[CONFIG] {BackgroundColors.CYAN}{k}{BackgroundColors.GREEN} = {BackgroundColors.CYAN}{v}{BackgroundColors.GREEN} (source: {BackgroundColors.CYAN}{src}{BackgroundColors.GREEN})")  # Log configuration key and value with colored output
+
+
 def validate_config_structure(config: dict):
     """
     Ensure required keys exist and have correct types for dataset_descriptor.
