@@ -109,6 +109,31 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def init_runtime(config: dict):
+    """
+    Initialize runtime artifacts (logger) based on provided config.
+
+    :param config: The merged configuration dictionary.
+    :return: A dictionary containing runtime artifacts and settings.
+    """
+
+    validate_config_structure(config)  # Validate required config keys before accessing them
+
+    logs_dir = config.get("paths", {}).get("logs_dir", "./Logs")  # Resolve logs directory from config with default
+    os.makedirs(logs_dir, exist_ok=True)  # Create logs directory if it does not exist
+    logger = Logger(os.path.join(logs_dir, f"{Path(__file__).stem}.log"), clean=True)  # Initialize a fresh logger for this run
+
+    runtime = {
+        "logger": logger,  # Logger instance for output redirection
+        "verbose": bool(config.get("execution", {}).get("verbose", False)),  # Verbose flag from config
+        "results_dir": os.path.join(".", config.get("paths", {}).get("dataset_description_subdir", "Dataset_Description")),  # Results output directory
+        "results_filename_suffix": config.get("dataset_descriptor", {}).get("csv_output_suffix", "_description"),  # CSV output filename suffix
+        "ignore_files": list(config.get("paths", {}).get("ignore_files", []) or []),  # Files to ignore during scanning
+        "ignore_dirs": list(config.get("execution", {}).get("ignore_dirs", []) or []),  # Directories to ignore during scanning
+    }  # Assemble runtime dictionary with all required artifacts
+    return runtime  # Return the fully assembled runtime dictionary
+
+
 def log_config_sources(config: dict, cli_args: dict | None = None):
     """
     Log configuration values with their source (CLI/config/default).
