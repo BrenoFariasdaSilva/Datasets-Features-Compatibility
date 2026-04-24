@@ -109,6 +109,32 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def write_report(report_rows, base_dir, output_filename, config: dict | None = None):
+    """
+    Write the report rows to a CSV file.
+
+    :param report_rows: List of dictionaries containing report data.
+    :param base_dir: Base directory for saving the report.
+    :param output_filename: Name of the output CSV file.
+    :param config: Optional configuration dictionary for resolving output subdirectory.
+    :return: None.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        report_df = pd.DataFrame(report_rows)  # Create a DataFrame from the report rows
+        report_df = reorder_report_columns(report_df)  # Reorder DataFrame columns to place preprocessing metrics at the end for better readability
+        cfg = config or get_default_config()
+        results_subdir = cfg.get("paths", {}).get("dataset_description_subdir", "Dataset_Description")
+        results_dir = os.path.join(base_dir, results_subdir)
+        os.makedirs(results_dir, exist_ok=True)
+        report_csv_path = os.path.join(results_dir, output_filename)
+        generate_csv_and_image(report_df, report_csv_path, config=cfg)
+        pass  # No-op here; preprocessing summary is handled by the caller
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def collect_preprocessing_metrics(
     filepath,
     original_num_rows,
