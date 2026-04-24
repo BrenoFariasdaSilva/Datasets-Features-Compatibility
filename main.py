@@ -109,6 +109,32 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def sanitize_plot_text(text: str) -> str:
+    """
+    Normalize text to safe UTF-8 for matplotlib rendering.
+
+    :param text: Original text string.
+    :return: Sanitized text string.
+    """
+    
+    if text is None:  # Handle None inputs gracefully
+        return ""  # Return empty string for None inputs
+    
+    try:  # Try explicit replacements and UTF-8 normalization
+        sanitized = str(text).replace("\x96", "-")  # Replace CP1252 EN DASH with ASCII hyphen
+        sanitized = sanitized.replace("–", "-")  # Replace Unicode EN DASH with ASCII hyphen
+        sanitized = sanitized.replace("—", "-")  # Replace EM DASH with ASCII hyphen
+        sanitized = sanitized.replace("\x92", "'")  # Replace CP1252 smart quote with apostrophe
+        sanitized = sanitized.encode("utf-8", "ignore").decode("utf-8")  # Remove invalid UTF-8 sequences
+        sanitized = "".join(ch for ch in sanitized if (ch.isprintable() or ch in "\t\n\r"))  # Remove control characters
+        return sanitized  # Return cleaned text
+    except Exception:  # In case of unexpected errors during sanitization
+        try:  # Best-effort fallback to safe ASCII representation
+            return str(text).encode("ascii", "ignore").decode("ascii")  # Fallback to ASCII-only string
+        except Exception:  # If fallback also fails
+            return ""  # Return empty string as ultimate fallback
+
+
 def save_tsne_plot(X_emb, labels, output_path, title):
     """
     Create and save a 2D t-SNE scatter plot.
