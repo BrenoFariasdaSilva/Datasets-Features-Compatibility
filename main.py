@@ -109,6 +109,29 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def compute_initial_alloc(counts, min_per_class):
+    """
+    Compute initial per-class allocations capped by `min_per_class`.
+
+    This function computes the initial allocation for each class as the
+    minimum of the class count and the requested `min_per_class` value and
+    returns the allocation mapping together with the sum of those values.
+
+    :param counts: pandas Series with per-class counts
+    :param min_per_class: preferred minimum samples per class
+    :return: Tuple (initial_alloc dict, s_min int)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        initial = {c: min(int(counts[c]), int(min_per_class)) for c in counts.index}  # Compute min(count, min_per_class)
+        s = sum(initial.values())  # Sum of initial allocations
+
+        return initial, s  # Return tuple (initial_alloc, s_min)
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def allocate_with_min(initial_alloc, counts, max_samples):
     """
     Distribute remaining capacity after satisfying per-class minima.
