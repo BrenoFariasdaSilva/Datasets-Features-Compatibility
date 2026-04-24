@@ -109,6 +109,33 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def summarize_classes(df, label_col):
+    """
+    Summarizes classes and class distributions if a label column exists.
+
+    :param df: The pandas DataFrame
+    :param label_col: The name of the label column
+    :return: Tuple containing string of classes and class distribution summary
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        if label_col and label_col in df.columns:  # If a label column exists
+            classes = df[label_col].unique()  # Get unique classes
+            classes_str = ", ".join(map(str, classes))  # Create string of classes
+            class_counts = df[label_col].value_counts()  # Get counts of each class
+            total = class_counts.sum()  # Total number of samples
+            class_dist_list = [
+                f"{cls}: {cnt} ({cnt/total*100:.2f}%)" for cls, cnt in class_counts.items()
+            ]  # Create class distribution list
+            class_dist_str = ", ".join(class_dist_list)  # Create class distribution string
+            return classes_str, class_dist_str  # Return the classes and class distribution
+
+        return "None", "None"  # Return "None" if no label column
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def extract_labels_info(df: pd.DataFrame) -> tuple:  # Define function to extract label info with type hints
     """
     Extract number of unique labels and label list.
