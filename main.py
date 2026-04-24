@@ -109,6 +109,75 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def generate_dataset_report(input_path, file_extension=".csv", low_memory=None, output_filename: str | None = None, config: dict | None = None):
+    """
+    Generate a CSV report for the specified input path.
+    The Dataset Name column will include subdirectories if present.
+
+    :param input_path: Directory or file path containing the dataset.
+    :param file_extension: File extension to filter (default: .csv).
+    :param low_memory: Whether to use low memory mode when loading CSVs (default: True).
+    :param output_filename: Name of the CSV file to save the report.
+    :param config: Optional configuration dictionary for resolving paths and settings.
+    :return: True if the report was generated successfully, False otherwise.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        report_rows = []  # List to store report rows
+        sorted_matching_files = []  # List to store matching files
+        preprocessing_metrics = []  # List to collect per-file preprocessing metric dicts
+
+        sorted_matching_files, base_dir = collect_report_input_files(input_path, file_extension, config)  # Collect matching files and resolve base directory from the provided input path
+
+        cfg = config or get_default_config()
+
+        if not sorted_matching_files:  # If no matching files were found
+            print(f"{BackgroundColors.RED}No matching {file_extension} files found in: {input_path}{Style.RESET_ALL}")
+            return False  # Exit the function
+
+        output_filename = resolve_output_filename(output_filename, cfg)  # Resolve the output filename, applying config defaults and ensuring a .csv extension
+
+        headers_map = build_headers_map(sorted_matching_files, low_memory=low_memory)  # Build headers map using lightweight header-only reads to avoid loading all datasets into memory simultaneously
+        common_features, headers_match_all = compute_common_features(headers_map)  # Compute shared features and header uniformity flag from the headers-only map
+
+        progress = tqdm(
+            sorted_matching_files,  # Iterate over sorted matching files list
+            desc=f"{BackgroundColors.GREEN}Processing files{Style.RESET_ALL}",  # Description text remains green and reset styles
+            unit="file",  # Use file as unit for progress
+            ncols=100,  # Fixed progress bar width in characters
+            colour="cyan",  # Set progress bar visualization color to cyan
+        )  # Create a single in-place progress bar instance
+        for idx, filepath in enumerate(progress, 1):  # Process each matching file
+            file_basename = os.path.relpath(filepath, base_dir).replace("\\", "/")  # Get the file path relative to base_dir and normalize slashes
+            colored_desc = f"{BackgroundColors.GREEN}Processing {BackgroundColors.CYAN}{file_basename}{Style.RESET_ALL}"  # Compose colored description using BackgroundColors while keeping length bounded
+            progress.set_description(colored_desc)  # Update progress bar description with colored, truncated filename for inline display
+
+            df_current = load_dataset(filepath, low_memory)  # Load one dataset at a time to minimize peak RAM usage
+            if df_current is None:  # Verify that the dataset was loaded successfully
+                print(f"{BackgroundColors.YELLOW}Warning: failed to load {filepath}; skipping.{Style.RESET_ALL}")  # Warn about the skipped file without breaking the progress bar
+                continue  # Skip to the next file without accumulating a None entry
+
+            info = get_dataset_file_info(filepath, df=df_current, low_memory=low_memory)  # Extract metadata using the already-loaded DataFrame to avoid a second full read
+            if info:  # If info was successfully retrieved
+                enrich_file_info_with_metadata(info, filepath, base_dir, headers_map, common_features, headers_match_all, cfg, low_memory, df_current)  # Populate Dataset Name, Headers Match, Common/Extra Features, and t-SNE Plot fields in place
+
+                report_rows.append(info)  # Add the info to the report rows
+
+                append_preprocessing_metrics_safe(filepath, info, preprocessing_metrics, file_basename)  # Collect and append preprocessing metrics with error-safe handling
+                del info  # Release info reference after appending to report structures to reduce retention
+
+            try:  # Attempt to release dataset memory to minimize peak RAM consumption
+                del df_current  # Delete the current dataset reference to allow garbage collection
+            except Exception:  # Ignore exceptions during cleanup to prevent masking processing errors
+                pass  # Continue without cleanup on delete failure
+            gc.collect()  # Force garbage collection to reclaim memory released by deleting the dataset
+
+        return finalize_and_write_report(report_rows, preprocessing_metrics, base_dir, output_filename, config)  # Number rows, write report, generate preprocessing summary, and return success flag
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def collect_group_files(paths, file_extension=".csv", config: dict | None = None):
     """
     Collect all matching files for a group of paths.
