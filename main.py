@@ -109,6 +109,35 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def fill_replace_and_drop(numeric_df):
+    """
+    Replace infinities, drop all-NaN columns, and fill remaining NaNs with
+    the column median (or 0 when median is NaN).
+
+    :param numeric_df: DataFrame with numeric columns
+    :return: cleaned DataFrame (may be empty)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Replacing {BackgroundColors.CYAN}infinities, dropping all-NaN columns, and filling NaNs{BackgroundColors.GREEN} with column medians.{Style.RESET_ALL}"
+        )  # Output the verbose message
+
+        numeric_df = numeric_df.replace([np.inf, -np.inf], np.nan)  # Replace +/-infinity with NaN
+        numeric_df = numeric_df.loc[:, numeric_df.notna().any(axis=0)]  # Drop columns that are entirely NaN
+        if numeric_df.shape[1] == 0:  # If no columns remain after dropping
+            return numeric_df  # Return the (empty) DataFrame
+
+        for col in numeric_df.columns:  # Iterate over numeric columns
+            med = numeric_df[col].median()  # Compute column median
+            numeric_df[col] = numeric_df[col].fillna(0 if pd.isna(med) else med)  # Fill NaNs with median or 0
+
+        return numeric_df  # Return cleaned numeric DataFrame
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def compute_initial_alloc(counts, min_per_class):
     """
     Compute initial per-class allocations capped by `min_per_class`.
