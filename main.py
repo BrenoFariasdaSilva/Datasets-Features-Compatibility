@@ -109,6 +109,44 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def adjust_rows_for_group(report_rows, group_name):
+    """
+    Adjust pairwise rows so that the target group always appears as Dataset A.
+
+    :param report_rows: List of dictionaries representing pairwise report rows
+    :param group_name: Target group to appear as Dataset A
+    :return: List of adjusted report rows
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        adjusted = []  # Initialize adjusted row list
+
+        for row in report_rows:  # Iterate over existing report rows
+            if row["Dataset A"] == group_name:  # Already Dataset A
+                adjusted.append(dict(row))  # Keep as-is
+            elif row["Dataset B"] == group_name:  # Swap A <-> B
+                swapped = {  # Construct swapped row
+                    "Dataset A": row["Dataset B"],  # Swap Dataset A
+                    "Dataset B": row["Dataset A"],  # Swap Dataset B
+                    "Files in A": row["Files in B"],  # Swap file counts
+                    "Files in B": row["Files in A"],  # Swap file counts
+                    "N Common Features": int(row.get("N Common Features", 0)),  # Keep common feature count unchanged on swap
+                    "Common Features (A ∩ B)": row["Common Features (A ∩ B)"],  # Keep common features unchanged on swap
+                    "N Extra Features in A": int(row.get("N Extra Features in B", 0)),  # Swap extra feature count so A count reflects former B count
+                    "Extra Features in A (A \\ B)": row["Extra Features in B (B \\ A)"],  # Swap extra features so A receives former B extras
+                    "N Extra Features in B": int(row.get("N Extra Features in A", 0)),  # Swap extra feature count so B count reflects former A count
+                    "Extra Features in B (B \\ A)": row["Extra Features in A (A \\ B)"],  # Swap extra features so B receives former A extras
+                }
+                adjusted.append(swapped)  # Append swapped row
+            else:  # Unrelated row, keep as-is
+                adjusted.append(dict(row))  # Keep as-is
+
+        return adjusted  # Return adjusted rows
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def generate_cross_dataset_report(datasets_dict, file_extension=".csv", low_memory=None, output_filename=None, config: dict | None = None):
     """
     Generate a cross-dataset feature-compatibility report comparing dataset
