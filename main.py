@@ -109,6 +109,24 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def format_labels_list(labels_list: list) -> str:  # Define function to format labels list into stable CSV string
+    """
+    Format labels list into stable CSV string.
+
+    :param labels_list: List of labels to format.
+    :return: String representation suitable for CSV.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        if not labels_list:  # If the provided labels list is empty
+            return "[]"  # Return empty list representation for CSV
+        escaped = ", ".join(repr(x) for x in labels_list)  # Create comma-separated repr string to preserve types and quoting
+        return f"[{escaped}]"  # Return bracketed representation suitable for CSV ingestion
+    except Exception as e:  # Catch any exception to preserve existing telemetry behavior
+        print(str(e))  # Print exception to terminal for visibility
+        raise  # Re-raise exception to maintain original semantics
+
+
 def coerce_numeric_columns(df):
     """
     Try to extract numeric columns from `df`. If no numeric columns are
