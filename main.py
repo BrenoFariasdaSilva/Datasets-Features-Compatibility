@@ -109,6 +109,52 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def extract_classes_and_distribution(df: "pd.DataFrame") -> tuple:
+    """
+    Identify label column and extract classes and their distribution.
+
+    :param df: pandas DataFrame to inspect for label column and classes.
+    :return: Tuple (label_col_or_None, classes_str_or_None, class_dist_str_or_None).
+    """
+
+    try:  # Guard logic with module-standard exception handling
+        if df is None or df.empty:  # Handle empty DataFrame edge case
+            return "", "", ""  # No label and no class info
+
+        found_col = detect_label_column(df.columns)  # Use existing detector to find label column when possible
+
+        if not found_col:  # If detector failed, fallback heuristics
+            last_col = df.columns[-1] if len(df.columns) > 0 else ""  # Determine last column when available
+            if last_col and (
+                pd.api.types.is_object_dtype(df[last_col].dtype)
+                or getattr(pd.api.types, "is_categorical_dtype", lambda x: False)(df[last_col].dtype)
+                or pd.api.types.is_bool_dtype(df[last_col].dtype)
+            ):  # Accept last column as label when non-numeric
+                found_col = last_col  # Use last column as fallback label
+
+        if not found_col:  # When still no label candidate found
+            return "", "", ""  # No class information available
+
+        series = df[found_col]  # Reference label series directly to avoid copy
+        counts = series.value_counts(dropna=False)  # Counts including NaN as a key when present
+        total = int(counts.sum())  # Total samples as int
+
+        if total == 0:  # Handle degenerate case with zero total
+            return found_col, "", ""  # Return label column but no class info
+
+        counts_sorted = counts.sort_values(ascending=False)  # Ensure highest-to-lowest ordering
+
+        classes_list = [str(x) for x in counts_sorted.index.tolist()]  # Convert index values to strings
+        classes_str = ", ".join(classes_list) if classes_list else ""  # Comma-separated classes string or empty string
+
+        class_dist_str = build_class_distribution_string(counts_sorted)  # Build class distribution string in the exact format used in reports
+
+        return found_col, classes_str, class_dist_str  # Return detected label col and formatted class info
+    except Exception as e:  # Preserve exception reporting pattern
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def get_dataset_file_info(filepath, df=None, low_memory=None):
     """
     Extract dataset information from a CSV file and return it as a dictionary.
