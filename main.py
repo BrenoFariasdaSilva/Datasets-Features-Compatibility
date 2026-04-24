@@ -82,50 +82,29 @@ from sklearn.preprocessing import StandardScaler  # For feature scaling
 from tqdm import tqdm  # For progress bars
 from typing import Any, cast  # For type hinting
 
+
 # Macros:
 class BackgroundColors:  # Colors for the terminal
-   CYAN = "\033[96m"  # Cyan
-   GREEN = "\033[92m"  # Green
-   YELLOW = "\033[93m"  # Yellow
-   RED = "\033[91m"  # Red
-   BOLD = "\033[1m"  # Bold
-   UNDERLINE = "\033[4m"  # Underline
-   CLEAR_TERMINAL = "\033[H\033[J"  # Clear the terminal
+    CYAN = "\033[96m"  # Cyan
+    GREEN = "\033[92m"  # Green
+    YELLOW = "\033[93m"  # Yellow
+    RED = "\033[91m"  # Red
+    BOLD = "\033[1m"  # Bold
+    UNDERLINE = "\033[4m"  # Underline
+    CLEAR_TERMINAL = "\033[H\033[J"  # Clear the terminal
 
-# Execution Constants:
-VERBOSE = False  # Set to True to output verbose messages
 
-# Logger Setup:
-logger = Logger(f"./Logs/{Path(__file__).stem}.log", clean=True)  # Create a Logger instance
-sys.stdout = logger  # Redirect stdout to the logger
-sys.stderr = logger  # Redirect stderr to the logger
+# Execution Constants will be sourced from configuration (CLI > config.yaml > defaults)
 
-# Sound Constants:
-SOUND_COMMANDS = {"Darwin": "afplay", "Linux": "aplay", "Windows": "start"}  # The commands to play a sound for each operating system
-SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"  # The path to the sound file
 
-# RUN_FUNCTIONS:
-RUN_FUNCTIONS = {
-   "Play Sound": True,  # Set to True to play a sound when the program finishes
+SOUND_COMMANDS = {
+    "Darwin": "afplay",
+    "Linux": "aplay",
+    "Windows": "start",
 }
 
-DATASETS = {  # Dictionary containing dataset paths and feature files
-	"CICDDoS2019-Dataset": [  # List of paths to the CICDDoS2019 dataset
-		"./Datasets/CICDDoS2019/01-12/",
-		"./Datasets/CICDDoS2019/03-11/",
-   ],
-   "CICDDoS2017-Dataset": [  # List of paths to the CICDDoS2017 dataset
-      "./Datasets/CIC-IDS2017/Converted/",
-   ],
-}
+SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 
-CROSS_DATASET_VALIDATE = True  # Set to True to perform cross-dataset validation between the datasets defined in DATASETS
-
-RESULTS_DIR = "./Dataset_Description/"  # Directory to save the results
-RESULTS_FILENAME = "Dataset_Descriptor.csv"  # Filename for the results CSV
-
-IGNORE_FILES = [RESULTS_FILENAME]  # List of filenames to ignore when searching for datasets
-IGNORE_DIRS = ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"]  # List of directory names to ignore when searching for datasets
 
 # Functions Definitions:
 
