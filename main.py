@@ -109,6 +109,79 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def collect_matching_files(
+    input_dir,
+    file_format=".csv",
+    ignore_files: list | None = None,
+    ignore_dirs: list | None = None,
+    config: dict | None = None,
+):
+    """
+    Recursively collect all files in the specified directory and subdirectories
+    that match the given file format and are not in the ignore list.
+
+    :param input_dir: Directory to search.
+    :param file_format: File format to include (default: .csv).
+    :param ignore_files: List of filenames to ignore.
+    :param ignore_dirs: List of directory names to ignore.
+    :param config: Optional configuration dictionary for ignore list resolution.
+    :return: Sorted list of matching file paths.
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        verbose_output(
+            f"{BackgroundColors.GREEN}Collecting all files with format {BackgroundColors.CYAN}{file_format}{BackgroundColors.GREEN} in directory: {BackgroundColors.CYAN}{input_dir}{Style.RESET_ALL}"
+        )  # Output the verbose message
+
+        cfg = config or get_default_config()
+        resolved_ignore_files = ignore_files if ignore_files is not None else list(cfg.get("paths", {}).get("ignore_files", []) or [])
+        resolved_ignore_dirs = ignore_dirs if ignore_dirs is not None else list(cfg.get("execution", {}).get("ignore_dirs", ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"]) or ["Cache", "Data_Separability", "Dataset_Description", "Feature_Analysis"])
+
+        normalized_ignore_files: set[str] = {os.path.normcase(f) for f in (resolved_ignore_files or [])}  # Create normalized set of ignored filenames for fast membership verification
+        normalized_ignore_dirs: set[str] = {os.path.normcase(d) for d in (resolved_ignore_dirs or [])}  # Create normalized set of ignored directory names for fast membership verification
+
+        matching_files = []  # List to store matching file paths
+
+        for root, dirs, files in os.walk(input_dir):  # Walk through the directory
+            try:  # Try to filter out ignored directories
+                dirs[:] = [
+                    d for d in dirs if os.path.normcase(d) not in normalized_ignore_dirs
+                ]  # Modify dirs in-place to skip ignored directories using normalized set
+            except Exception:  # If an error occurs while filtering directories
+                pass  # Ignore the error and continue
+
+            for file in files:  # For each file
+                if not file.endswith(file_format):  # Skip files that do not match the specified format
+                    continue  # Continue to the next file
+
+                basename_norm = os.path.normcase(file)  # Normalize the basename for case-insensitive comparison
+                fullpath = os.path.join(root, file)  # Get the full file path
+                fullpath_norm = os.path.normcase(fullpath)  # Normalize the full file path for case-insensitive comparison
+
+                if basename_norm in normalized_ignore_files or fullpath_norm in normalized_ignore_files:  # If the file is in the ignore set
+                    verbose_output(f"Skipping ignored file: {fullpath}")  # Output verbose message for ignored file
+                    continue  # Continue to the next file
+
+                matching_files.append(fullpath)  # Add the full file path to the list
+
+        unique_files = list(set(matching_files))  # Remove duplicates while preserving no particular order
+
+        files_with_size = []  # Prepare list to hold (path, size) tuples for robust sorting
+        for f in unique_files:  # Iterate files to resolve their sizes
+            try:  # Attempt to get file size and handle any filesystem issues gracefully
+                size = os.path.getsize(f)  # Get the file size in bytes for sorting by magnitude
+            except Exception:  # If size retrieval fails for any file
+                size = 0  # Fallback to zero size to avoid breaking the sort when file is inaccessible
+            files_with_size.append((f, size))  # Store tuple of file path and its size for later sorting
+
+        sorted_matching_files = [p for p, _ in sorted(files_with_size, key=lambda x: (-x[1], x[0]))]  # Sort by size descending then by path for determinism
+
+        return sorted_matching_files  # Return the list of matching files ordered from biggest to smallest by file size
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def build_headers_map(filepaths, low_memory=None):
     """
     Build a mapping of file path -> list of header columns.
