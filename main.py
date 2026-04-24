@@ -109,6 +109,48 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def initialize_and_fit_tsne(X, n_components=2, perplexity=30, n_iter=1000, random_state=42):
+    """
+    Initialize t-SNE with proper parameters and compute 2D or 3D embedding.
+
+    Handles compatibility with different TSNE versions by inspecting the constructor
+    signature and setting 'n_iter' or 'max_iter' accordingly.
+
+    :param X: numpy array of scaled numeric features
+    :param n_components: number of dimensions for embedding (2 or 3)
+    :param perplexity: t-SNE perplexity parameter
+    :param n_iter: number of t-SNE optimization iterations
+    :param random_state: random seed for reproducibility
+    :return: numpy array of t-SNE embeddings (n_samples, n_components)
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        try:  # Inspect TSNE init signature for compatibility
+            sig = signature(TSNE.__init__).parameters  # Get TSNE init signature
+        except Exception:  # If inspection fails
+            sig = {}  # Fallback to empty signature
+
+        tsne_kwargs = {
+            "n_components": n_components,
+            "perplexity": perplexity,
+            "random_state": random_state,
+            "init": "pca",
+        }  # Base t-SNE args
+        if "n_iter" in sig:  # Verifies for n_iter parameter
+            tsne_kwargs["n_iter"] = n_iter  # Set n_iter if supported
+        elif "max_iter" in sig:  # Verifies for max_iter parameter
+            tsne_kwargs["max_iter"] = n_iter  # Set max_iter if supported
+        else:  # Neither parameter supported
+            tsne_kwargs["max_iter"] = n_iter  # Default to max_iter
+
+        tsne = TSNE(**tsne_kwargs)  # Initialize t-SNE with compatible args
+        X_emb = tsne.fit_transform(X)  # Compute embedding
+        return X_emb  # Return the embedding
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def sanitize_plot_text(text: str) -> str:
     """
     Normalize text to safe UTF-8 for matplotlib rendering.
