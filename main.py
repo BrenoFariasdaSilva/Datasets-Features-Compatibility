@@ -109,6 +109,53 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def enrich_file_info_with_metadata(info, filepath, base_dir, headers_map, common_features, headers_match_all, cfg, low_memory, df_current):
+    """
+    Populate a file info dictionary with relative path, header uniformity, common/extra feature lists, and t-SNE plot path.
+
+    :param info: Mutable dictionary of dataset metadata fields populated in place by this function.
+    :param filepath: Absolute path of the dataset file being processed.
+    :param base_dir: Absolute base directory used to compute the relative path for the Dataset Name field.
+    :param headers_map: Dictionary mapping file paths to their header lists for common/extra feature computation.
+    :param common_features: Set of feature names present in every discovered file used for common/extra classification.
+    :param headers_match_all: Boolean flag indicating whether all files share identical header sets.
+    :param cfg: Configuration dictionary used to look up the t-SNE output subdirectory key.
+    :param low_memory: Boolean flag passed to the t-SNE generator to control memory usage during plot generation.
+    :param df_current: Already-loaded pandas DataFrame for the current file passed to the t-SNE generator to avoid a second disk read.
+    :return: None (modifies info in place with Dataset Name, Headers Match All Files, Common Features, Extra Features, and t-SNE Plot fields).
+    """
+
+    relative_path = os.path.relpath(filepath, base_dir)  # Get path relative to base_dir
+    info["Dataset Name"] = relative_path.replace(
+        "\\", "/"
+    )  # Use relative path for Dataset Name and normalize slashes
+
+    common_list, extras = get_file_common_and_extras(
+        headers_map, filepath, common_features
+    )  # Get common and extra features for this file
+
+    info["Headers Match All Files"] = (
+        "Yes" if headers_match_all else "No"
+    )  # Indicate if headers match all files
+    info["Common Features (in all files)"] = (
+        ", ".join(common_list) if common_list else "None"
+    )  # Join common features into a string
+    info["Extra Features (not in all files)"] = (
+        ", ".join(extras) if extras else "None"
+    )  # Join extra features into a string
+
+    tsne_out_subdir = cfg.get("paths", {}).get("data_separability_subdir", "Data_Separability")  # Read t-SNE output subdirectory name from configuration with default fallback
+    tsne_file = generate_tsne_plot(
+        filepath,
+        df=df_current,
+        low_memory=low_memory,
+        sample_size=2000,
+        output_dir=os.path.join(os.path.dirname(os.path.abspath(filepath)), tsne_out_subdir),
+        config=cfg,
+    )  # Generate t-SNE plot using the already-loaded DataFrame to avoid rereading from disk
+    info["t-SNE Plot"] = tsne_file if tsne_file else "None"  # Add t-SNE plot filename or "None"
+
+
 def append_preprocessing_metrics_safe(filepath, info, preprocessing_metrics, file_basename):
     """
     Collect preprocessing metrics for a processed file and append them to the metrics list, WARNING on failure.
