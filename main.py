@@ -109,6 +109,43 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def append_preprocessing_metrics_safe(filepath, info, preprocessing_metrics, file_basename):
+    """
+    Collect preprocessing metrics for a processed file and append them to the metrics list, WARNING on failure.
+
+    :param filepath: Absolute path of the dataset file used as identifier in the metrics row.
+    :param info: Dataset metadata dictionary providing original and post-preprocessing row/feature counts.
+    :param preprocessing_metrics: Mutable list to which the collected metrics row dictionary is appended.
+    :param file_basename: Relative file path string used in the failure warning message for user context.
+    :return: None (appends to preprocessing_metrics in place or prints a warning on failure).
+    """
+
+    try:  # Collect preprocessing metrics for this file when available
+        metrics_row = collect_preprocessing_metrics(
+            filepath,  # File path being processed
+            info.get("original_num_rows", 0),  # Original rows captured earlier
+            info.get("rows_after_preprocessing", 0),  # Rows after preprocessing captured earlier
+            info.get("original_num_features", 0),  # Original features captured earlier
+            info.get("features_after_preprocessing", 0),  # Features after preprocessing captured earlier
+            info.get("rows_after_nan_inf_removal", 0),  # Rows after NaN/infinite removal step
+            info.get("removed_rows_nan_inf", 0),  # Rows removed by NaN/infinite filtering step
+            info.get("removed_rows_nan_inf_proportion", 0.0),  # Proportion of rows removed by NaN/infinite filtering step
+            info.get("features_after_zero_variance_removal", 0),  # Features after zero-variance numerical feature removal step
+            info.get("removed_zero_variance_features", 0),  # Zero-variance numerical features removed in preprocessing
+            info.get("removed_zero_variance_features_proportion", 0.0),  # Proportion of zero-variance numerical features removed
+            info.get("dropped_non_informative_features", 0),  # Non-informative identifier/metadata features removed in this module
+            info.get("dropped_non_informative_features_proportion", 0.0),  # Proportion of non-informative identifier/metadata features removed
+            info.get("features_transformed_for_experiment", 0),  # Features transformed for dtype enforcement and categorical encoding per experiment
+            info.get("features_transformed_for_experiment_proportion", 0.0),  # Proportion of transformed features for dtype enforcement and categorical encoding per experiment
+            info.get("features_cast_to_float64_int64", 0),  # Numeric features requiring cast to float64/int64
+            info.get("features_encoded_categorical", 0),  # Categorical features requiring ordinal or one-hot encoding
+            info.get("preprocessing_metrics", None),  # Structured per-step preprocessing metrics for isolated CSV mapping
+        )  # Create metrics row dict
+        preprocessing_metrics.append(metrics_row)  # Append metrics row to list for this directory
+    except Exception as _pm:  # If metrics collection fails
+        print(f"{BackgroundColors.YELLOW}Warning: failed to collect preprocessing metrics for {file_basename}: {_pm}{Style.RESET_ALL}")  # Warn without breaking the progress bar
+
+
 def generate_dataset_report(input_path, file_extension=".csv", low_memory=None, output_filename: str | None = None, config: dict | None = None):
     """
     Generate a CSV report for the specified input path.
