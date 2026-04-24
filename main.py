@@ -109,6 +109,40 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def sample_by_class_allocation(labels, allocations, random_state):
+    """
+    Sample row indices according to per-class allocations.
+
+    For each class, randomly selects the allocated number of samples without
+    replacement. If allocation exceeds available samples for a class, all
+    samples from that class are included.
+
+    :param labels: pandas Series containing class labels
+    :param allocations: dict mapping class -> number of samples to select
+    :param random_state: seed for reproducible random sampling
+    :return: list of selected row indices
+    """
+
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        selected_idx = []  # Container for selected indices
+        rng = np.random.RandomState(random_state)  # RNG for reproducibility
+
+        for cls, k in allocations.items():  # Iterate allocations per class
+            idxs = labels[labels == cls].index.to_list()  # All indices for this class
+            if k >= len(idxs):  # If allocation >= available samples
+                sampled_local = idxs  # Take all available indices
+            else:  # Otherwise
+                sampled_local = list(
+                    rng.choice(idxs, size=k, replace=False)
+                )  # Randomly choose k indices without replacement
+            selected_idx.extend(sampled_local)  # Append sampled indices to selection
+
+        return selected_idx  # Return the final list of indices
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def downsample_with_class_awareness(numeric_df, labels, sample_size, random_state):
     """
     Downsample dataset while preserving class distribution and ensuring
