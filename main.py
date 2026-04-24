@@ -109,6 +109,30 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def sanitize_feature_names(columns):
+    r"""
+    Sanitize column names by removing special JSON characters that LightGBM doesn't support.
+    Replaces: { } [ ] : , " \ with underscores.
+
+    :param columns: pandas Index or list of column names
+    :return: list of sanitized column names
+    """
+    
+    try:  # Wrap full function logic to ensure production-safe monitoring
+        sanitized = []  # List to store sanitized column names
+        
+        for col in columns:  # Iterate over each column name
+            clean_col = re.sub(r"[{}\[\]:,\"\\]", "_", str(col))  # Replace special characters with underscores
+            clean_col = re.sub(r"_+", "_", clean_col)  # Replace multiple underscores with a single underscore
+            clean_col = clean_col.strip("_")  # Remove leading/trailing underscores
+            sanitized.append(clean_col)  # Add sanitized column name to the list
+            
+        return sanitized  # Return the list of sanitized column names
+    except Exception as e:  # Catch any exception to ensure logging
+        print(str(e))  # Print error to terminal for server logs
+        raise  # Re-raise to preserve original failure semantics
+
+
 def finalize_multiprocessing_resources() -> None:
     """
     Finalize multiprocessing children and tracked shared resources.
