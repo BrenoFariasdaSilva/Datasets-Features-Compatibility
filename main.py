@@ -2100,6 +2100,38 @@ def format_bytes_to_best_unit(byte_value: int) -> tuple[float, str]:
     return float(byte_value), "B"  # Return raw bytes when below kilobyte threshold
 
 
+def report_resources_usage(stage: str, filepath: str) -> tuple[int, int, float, int, int, float]:
+    """
+    Report and return process memory usage, system RAM percentage, CPU core usage, and CPU utilization.
+
+    Prints a verbose output line with CPU usage and memory usage for the given stage and file.
+
+    :param stage: Description of the measurement stage (e.g., "Before loading").
+    :param filepath: Path to the file being processed (for output context).
+    :return: Tuple (rss_bytes, total_bytes, percent_used, used_cpu_cores, total_cpu_cores, cpu_percent)
+    """
+
+    process = psutil.Process(os.getpid())  # Get current process
+
+    mem_bytes = process.memory_info().rss  # Resident Set Size in bytes
+
+    total_bytes = psutil.virtual_memory().total  # Total system RAM in bytes
+
+    percent = (mem_bytes / total_bytes) * 100 if total_bytes else 0.0  # Compute percent of RAM used
+
+    mem_value, mem_unit = format_bytes_to_best_unit(mem_bytes)  # Convert memory usage to best unit
+
+    used_cpu_cores, total_cpu_cores, cpu_percent = get_process_cpu_usage(process)  # Retrieve CPU metrics
+
+    verbose_output(
+        f"{BackgroundColors.YELLOW}[MEMORY]{Style.RESET_ALL} {stage} {BackgroundColors.CYAN}{filepath}{Style.RESET_ALL}: "
+        f"{cpu_percent:.2f}% CPU using {used_cpu_cores}/{total_cpu_cores} cores | "
+        f"{mem_value:.2f} {mem_unit} ({percent:.4f}%) RAM."
+    )  # Print CPU first, then memory usage with structured format
+
+    return mem_bytes, total_bytes, percent, used_cpu_cores, total_cpu_cores, cpu_percent  # Return full resource metrics
+
+
 def get_dataset_file_info(filepath, df=None, low_memory=None):
     """
     Extract dataset information from a CSV file and return it as a dictionary.
