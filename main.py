@@ -109,6 +109,37 @@ SOUND_FILE = "./.assets/Sounds/NotificationSound.wav"
 # Functions Definitions:
 
 
+def collect_report_input_files(input_path, file_extension, config):
+    """
+    Determine the matching files and base directory from the provided input path.
+
+    :param input_path: Directory or single file path to scan for matching dataset files.
+    :param file_extension: File extension used to filter files when scanning a directory.
+    :param config: Optional configuration dictionary passed through to collect_matching_files.
+    :return: Tuple of (sorted_matching_files, base_dir) where sorted_matching_files is a list of absolute file paths and base_dir is the absolute base directory used for relative path computations.
+    """
+
+    if os.path.isdir(input_path):  # Scan the directory for all matching files
+        print(
+            f"{BackgroundColors.GREEN}Scanning directory {BackgroundColors.CYAN}{input_path}{BackgroundColors.GREEN} for {BackgroundColors.CYAN}{file_extension}{BackgroundColors.GREEN} files...{Style.RESET_ALL}"
+        )  # Announce directory scan start
+        sorted_matching_files = collect_matching_files(input_path, file_extension, config=config)  # Collect all matching files from the directory tree
+        base_dir = os.path.abspath(input_path)  # Use the directory itself as the base for relative paths
+    elif os.path.isfile(input_path) and input_path.endswith(file_extension):  # Single file provided
+        print(
+            f"{BackgroundColors.GREEN}Processing single file...{Style.RESET_ALL}"
+        )  # Announce single file processing
+        sorted_matching_files = [input_path]  # Wrap the single file in a list for uniform processing
+        base_dir = os.path.dirname(os.path.abspath(input_path))  # Use the file's parent directory as base
+    else:  # Input is neither a directory nor a valid matching file
+        print(
+            f"{BackgroundColors.RED}Input path is neither a directory nor a valid {file_extension} file: {input_path}{Style.RESET_ALL}"
+        )  # Report the invalid input path
+        sorted_matching_files = []  # No files to process when input is invalid
+        base_dir = os.path.abspath(input_path)  # Preserve input path as base for any downstream error messages
+    return sorted_matching_files, base_dir  # Return the collected files and resolved base directory
+
+
 def enrich_file_info_with_metadata(info, filepath, base_dir, headers_map, common_features, headers_match_all, cfg, low_memory, df_current):
     """
     Populate a file info dictionary with relative path, header uniformity, common/extra feature lists, and t-SNE plot path.
