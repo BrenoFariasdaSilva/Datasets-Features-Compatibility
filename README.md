@@ -26,19 +26,6 @@ This tool is ideal for data scientists and machine learning practitioners who ne
 ![GitHub License](https://img.shields.io/github/license/BrenoFariasdaSilva/Datasets-Features-Compatibility)
 ![GitHub Stars](https://img.shields.io/github/stars/BrenoFariasdaSilva/Datasets-Features-Compatibility)
 ![wakatime](https://wakatime.com/badge/github/BrenoFariasdaSilva/Datasets-Features-Compatibility.svg)
-
-</div>
-
-<div align="center">
-
-![GitHub Code Size in Bytes](https://img.shields.io/github/languages/code-size/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![GitHub Commits](https://img.shields.io/github/commit-activity/t/BrenoFariasdaSilva/Datasets-Features-Compatibility/main)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![GitHub Forks](https://img.shields.io/github/forks/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![GitHub Language Count](https://img.shields.io/github/languages/count/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![GitHub License](https://img.shields.io/github/license/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![GitHub Stars](https://img.shields.io/github/stars/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-![wakatime](https://wakatime.com/badge/github/BrenoFariasdaSilva/Datasets-Features-Compatibility.svg)
 [![GitHub Contributors](https://img.shields.io/github/contributors/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/graphs/contributors)
 [![GitHub Created At](https://img.shields.io/github/created-at/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility)
 [![GitHub Repository Size](https://img.shields.io/github/repo-size/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility)
@@ -49,7 +36,6 @@ This tool is ideal for data scientists and machine learning practitioners who ne
 [![Monthly Commits](https://img.shields.io/github/commit-activity/m/BrenoFariasdaSilva/Datasets-Features-Compatibility/main)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/commits)
 [![Merged PRs](https://img.shields.io/github/issues-search/BrenoFariasdaSilva/Datasets-Features-Compatibility?query=is%3Apr%20is%3Amerged&label=merged%20PRs&color=blue)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/pulls?q=is%3Apr+is%3Amerged)
 ![GitHub Primary Language](https://img.shields.io/badge/language-Python-3b82f6)
-
 ![Repobeats Statistics](https://repobeats.axiom.co/api/embed/151aaa14958b56988adc39f88605c450efb671f0.svg)
 
 </div>
