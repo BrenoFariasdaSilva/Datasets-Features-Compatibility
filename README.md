@@ -28,7 +28,6 @@ This tool is ideal for data scientists and machine learning practitioners who ne
 ![wakatime](https://wakatime.com/badge/github/BrenoFariasdaSilva/Datasets-Features-Compatibility.svg)
 [![GitHub Contributors](https://img.shields.io/github/contributors/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/graphs/contributors)
 [![GitHub Created At](https://img.shields.io/github/created-at/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility)
-[![GitHub Repository Size](https://img.shields.io/github/repo-size/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility)
 [![Open Issues](https://img.shields.io/github/issues/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/issues?q=is%3Aissue+is%3Aclosed)
 [![Open Pull Requests](https://img.shields.io/github/issues-pr/BrenoFariasdaSilva/Datasets-Features-Compatibility)](https://github.com/BrenoFariasdaSilva/Datasets-Features-Compatibility/pulls)
